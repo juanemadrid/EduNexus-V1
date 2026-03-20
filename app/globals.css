@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg-deep: #f8fafc; /* Color de fondo claro y profesional */
+  --primary: #10b981;
+  --secondary: #3b82f6;
+  --accent: #8b5cf6;
+  --primary-glow: rgba(16, 185, 129, 0.15);
+  --glass-bg: rgba(255, 255, 255, 0.85); /* Panel de cristal blanco */
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  --text-main: #0f172a; /* Texto oscuro para máxima legibilidad */
+  --text-dim: #64748b;
+  --text-muted: #94a3b8;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  background: var(--bg-deep);
+  min-height: 100vh;
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+.aurora-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.5;
+  z-index: -2;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 32px;
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  z-index: 1;
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.heading-premium {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+.input-premium {
+  width: 100%;
+  background: white;
+  border: 1px solid #d1d5db; /* Borde gris claro, muy visible */
+  padding: 14px 20px;
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 15px;
+  transition: all 0.3s;
+}
+
+.input-premium:hover {
+  border-color: #9ca3af; /* Más oscuro para confirmar área de clic */
+  background: #fdfdfd;
+}
+
+.input-premium:focus {
+  outline: none;
+  background: white;
+  border-color: var(--primary);
+  box-shadow: 0 0 15px var(--primary-glow);
+}
+
+.btn-premium {
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.3);
+}
+
+.btn-premium:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 30px -5px rgba(16, 185, 129, 0.4);
+  filter: brightness(1.05);
+}
+
+.btn-premium:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade {
+  animation: fadeIn 0.6s ease-out forwards;
+}
