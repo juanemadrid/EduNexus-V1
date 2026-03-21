@@ -1,6 +1,7 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Search, Eye, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, FileText, Filter, ChevronDown } from 'lucide-react';
+import DateRangePicker from '@/components/DateRangePicker';
+import { Search, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, ChevronDown } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 
 const INITIAL_SUBJECTS = [
@@ -28,6 +29,13 @@ export default function SubjectsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Filter state
+  const [filterForm, setFilterForm] = useState({
+    filtroFecha: 'Período',
+    periodo: '2026 - 01',
+    fechaRango: 'Hoy'
+  });
 
   // Form state
   const [form, setForm] = useState({
@@ -107,6 +115,10 @@ export default function SubjectsPage() {
   const totalPages = Math.ceil(filteredSubjects.length / itemsPerPage);
   const currentItems = filteredSubjects.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const handleFilterChange = (field: string, value: string) => {
+    setFilterForm(prev => ({ ...prev, [field]: value }));
+  };
+
   return (
     <DashboardLayout>
       <div style={{ padding: '0 0 40px 0' }}>
@@ -123,32 +135,76 @@ export default function SubjectsPage() {
               setForm({ codigo: '', nombre: '', abreviacion: '', estado: 'Activa' });
               setShowModal(true);
             }}
-            style={{ background: 'var(--primary)', color: 'white' }}
+            style={{ background: 'var(--primary)', color: 'white', padding: '12px 24px' }}
           >
             <Plus size={18} /> Crear asignatura
           </button>
         </div>
 
-        {/* Search & Filters */}
+        {/* Search & Period/Date Filters */}
         <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', background: 'white' }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1 }}>
-              <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input 
-                type="text" 
-                placeholder="Buscar asignaturas..." 
-                className="input-premium"
-                style={{ paddingLeft: '48px', height: '48px', background: '#f8fafc' }}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '20px', alignItems: 'start' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
+              <div style={{ position: 'relative', minWidth: '300px', flex: 1 }}>
+                <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input 
+                  type="text" 
+                  placeholder="Buscar asignaturas..." 
+                  className="input-premium"
+                  style={{ paddingLeft: '48px', height: '48px', background: '#f8fafc' }}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '800', color: '#334155' }}>Filtrar por</label>
+                <select 
+                  className="input-premium" 
+                  style={{ width: '140px', height: '48px', fontSize: '14px', background: '#f8fafc' }}
+                  value={filterForm.filtroFecha}
+                  onChange={e => handleFilterChange('filtroFecha', e.target.value)}
+                >
+                  <option value="Período">Período</option>
+                  <option value="Fechas">Fechas</option>
+                </select>
+              </div>
+
+              {filterForm.filtroFecha === 'Período' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '800', color: '#334155' }}>Período</label>
+                  <select 
+                    className="input-premium" 
+                    style={{ width: '160px', height: '48px', fontSize: '14px', background: '#f8fafc' }}
+                    value={filterForm.periodo}
+                    onChange={e => handleFilterChange('periodo', e.target.value)}
+                  >
+                    <option value="2026 - 01">2026 - 01</option>
+                    <option value="2026 - 02">2026 - 02</option>
+                  </select>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: '220px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '800', color: '#334155' }}>Fechas</label>
+                  <DateRangePicker 
+                    value={filterForm.fechaRango} 
+                    onChange={(val) => handleFilterChange('fechaRango', val)} 
+                  />
+                </div>
+              )}
             </div>
-            <button className="btn-premium" style={{ height: '48px', padding: '0 24px', background: 'var(--primary)', color: 'white' }}>
-              <Search size={18} />
-            </button>
-            <button className="btn-premium" style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none' }}>
-              <Download size={18} /> Exportar
-            </button>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn-premium" style={{ height: '48px', padding: '0 24px', background: 'var(--primary)', color: 'white' }}>
+                <Search size={18} />
+              </button>
+              <button className="btn-premium" style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none' }}>
+                <Download size={18} /> Exportar
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
             <button 
               onClick={() => setShowAdvanced(!showAdvanced)}
               style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}

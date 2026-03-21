@@ -73,7 +73,7 @@ export default function MassCancellationPage() {
               onChange={(e) => setFilters({...filters, period: e.target.value})}
             >
               <option>Seleccione</option>
-              <option>2024-1</option>
+              <option>2025-1</option>
               <option>2023-2</option>
             </select>
           </div>

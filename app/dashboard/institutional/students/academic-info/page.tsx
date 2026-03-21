@@ -123,7 +123,7 @@ export default function AcademicInfoPage() {
                   </td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#334155' }}>{student.details?.campus || 'Sede Principal'}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#334155' }}>{student.details?.program || 'Programa General'}</td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#64748b' }}>{student.details?.period || '2024-1'}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#64748b' }}>{student.details?.period || '2025-1'}</td>
                   <td style={{ padding: '14px 24px', textAlign: 'center' }}>
                     <span style={{ 
                       padding: '4px 12px', 

@@ -32,9 +32,9 @@ export const JORNADAS: Jornada[] = [
 ];
 
 export const PERIODOS: Periodo[] = [
-  { id: '2024-1', nombre: 'Primer Semestre 2024', activo: false },
-  { id: '2024-2', nombre: 'Segundo Semestre 2024', activo: true },
   { id: '2025-1', nombre: 'Primer Semestre 2025', activo: false },
+  { id: '2025-2', nombre: 'Segundo Semestre 2025', activo: true },
+  { id: '2026-1', nombre: 'Primer Semestre 2026', activo: false },
 ];
 
 export const TIPOS_IDENTIFICACION = [

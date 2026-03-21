@@ -1,6 +1,6 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Search, Eye, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, FileText, Filter, ChevronDown, HelpCircle, Calendar } from 'lucide-react';
+import { Search, Eye, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, FileText, Filter, ChevronDown, HelpCircle, Calendar, BookOpen, Settings } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 
 const INITIAL_PROGRAMS = [
@@ -10,7 +10,7 @@ const INITIAL_PROGRAMS = [
   { id: '4', codigo: '03 AENFER *', nombre: 'AUXILIAR DE ENFERMERIA', estado: 'Activo' },
   { id: '5', codigo: '01 AENFER', nombre: 'AUXILIAR DE ENFERMERIA', estado: 'Activo' },
   { id: '6', codigo: '01A', nombre: 'AUXILIAR DE ENFERMERIA', estado: 'Activo' },
-  { id: '7', codigo: '102', nombre: 'TECNICO EN AIRES ACONDICIONADO Y REFRIGERACION', estado: 'Activo' },
+  { id: '102', nombre: 'TECNICO EN AIRES ACONDICIONADO Y REFRIGERACION', estado: 'Activo' },
   { id: '8', codigo: '02 ADMCONT', nombre: 'TECNICO AUXILIAR CONTABLE Y ADMINISTRATIVO', estado: 'Activo' },
   { id: '9', codigo: '01 ADMCONT', nombre: 'TECNICO AUXILIAR CONTABLE Y ADMINISTRATIVO', estado: 'Activo' },
   { id: '10', codigo: '07 ADMCONT', nombre: 'TECNICO AUXILIAR CONTABLE Y ADMINISTRATIVO', estado: 'Activo' },
@@ -26,6 +26,18 @@ export default function ProgramsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [activeTab, setActiveTab] = useState<'general' | 'pensum'>('general');
+  const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
+  const [showAssignSubject, setShowAssignSubject] = useState(false);
+  
+  // New subject assignment state
+  const [newAssignment, setNewAssignment] = useState({
+    subjectId: '',
+    nivel: 'Bimestre N° 1',
+    creditos: '3',
+    ihSemanal: '8',
+    ihTotal: '40'
+  });
 
   // Form state
   const [form, setForm] = useState({
@@ -38,7 +50,12 @@ export default function ProgramsPage() {
     grupos: 'No',
     tipoEvaluacion: 'Cuantitativo',
     categoria: '',
-    estado: 'Activo'
+    estado: 'Activo',
+    // Pensum config
+    notaAprobacion: '3.0',
+    valorMaximo: '5.0',
+    porcentajeInasistencia: '50',
+    pensumSubjects: [] as any[]
   });
 
   useEffect(() => {
@@ -48,6 +65,12 @@ export default function ProgramsPage() {
     } else {
       localStorage.setItem('edunexus_academic_programs', JSON.stringify(INITIAL_PROGRAMS));
       setPrograms(INITIAL_PROGRAMS);
+    }
+
+    // Load subjects for assignment
+    const savedSubjects = localStorage.getItem('edunexus_academic_subjects');
+    if (savedSubjects) {
+      setAvailableSubjects(JSON.parse(savedSubjects));
     }
   }, []);
 
@@ -87,8 +110,13 @@ export default function ProgramsPage() {
       grupos: 'No',
       tipoEvaluacion: 'Cuantitativo',
       categoria: '',
-      estado: 'Activo'
+      estado: 'Activo',
+      notaAprobacion: '3.0',
+      valorMaximo: '5.0',
+      porcentajeInasistencia: '50',
+      pensumSubjects: []
     });
+    setActiveTab('general');
   };
 
   const handleEdit = (program: any) => {
@@ -102,12 +130,56 @@ export default function ProgramsPage() {
       grupos: program.grupos || 'No',
       tipoEvaluacion: program.tipoEvaluacion || 'Cuantitativo',
       categoria: program.categoria || '',
-      estado: program.estado || 'Activo'
+      estado: program.estado || 'Activo',
+      notaAprobacion: program.notaAprobacion || '3.0',
+      valorMaximo: program.valorMaximo || '5.0',
+      porcentajeInasistencia: program.porcentajeInasistencia || '50',
+      pensumSubjects: program.pensumSubjects || []
     });
     setEditingId(program.id);
     setIsEditing(true);
     setShowModal(true);
   };
+
+  const handleAddAssignment = () => {
+    if (!newAssignment.subjectId) return;
+    
+    const subject = availableSubjects.find(s => s.id === newAssignment.subjectId);
+    if (!subject) return;
+
+    const assignment = {
+      ...newAssignment,
+      id: Date.now().toString(),
+      nombre: subject.nombre,
+      codigo: subject.codigo
+    };
+
+    setForm({
+      ...form,
+      pensumSubjects: [...form.pensumSubjects, assignment]
+    });
+    setShowAssignSubject(false);
+    setNewAssignment({
+      subjectId: '',
+      nivel: 'Bimestre N° 1',
+      creditos: '3',
+      ihSemanal: '8',
+      ihTotal: '40'
+    });
+  };
+
+  const removeAssignment = (id: string) => {
+    setForm({
+      ...form,
+      pensumSubjects: form.pensumSubjects.filter((s: any) => s.id !== id)
+    });
+  };
+
+  const groupedSubjects = form.pensumSubjects.reduce((acc: any, curr: any) => {
+    if (!acc[curr.nivel]) acc[curr.nivel] = [];
+    acc[curr.nivel].push(curr);
+    return acc;
+  }, {});
 
   const handleDelete = (id: string) => {
     setEditingId(id);
@@ -281,127 +353,264 @@ export default function ProgramsPage() {
               <button onClick={closeModal} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}><X size={20} /></button>
             </div>
 
+            {/* Modal Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', padding: '0 20px' }}>
+              <button 
+                onClick={() => setActiveTab('general')}
+                style={{ 
+                  padding: '16px 24px', 
+                  fontSize: '14px', 
+                  fontWeight: '700', 
+                  color: activeTab === 'general' ? 'var(--primary)' : '#64748b',
+                  borderBottom: activeTab === 'general' ? '2px solid var(--primary)' : '2px solid transparent',
+                  background: 'none',
+                  borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '8px'
+                }}
+              >
+                <Settings size={18} /> Información General
+              </button>
+              <button 
+                onClick={() => setActiveTab('pensum')}
+                style={{ 
+                  padding: '16px 24px', 
+                  fontSize: '14px', 
+                  fontWeight: '700', 
+                  color: activeTab === 'pensum' ? 'var(--primary)' : '#64748b',
+                  borderBottom: activeTab === 'pensum' ? '2px solid var(--primary)' : '2px solid transparent',
+                  background: 'none',
+                  borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '8px'
+                }}
+              >
+                <BookOpen size={18} /> Plan de Estudios (Pensum)
+              </button>
+            </div>
+
             {/* Modal Body */}
             <div style={{ padding: '32px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Código *</label>
-                  <input 
-                    type="text" 
-                    className="input-premium"
-                    value={form.codigo}
-                    onChange={e => setForm({...form, codigo: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Nombre *</label>
-                  <input 
-                    type="text" 
-                    className="input-premium"
-                    value={form.nombre}
-                    onChange={e => setForm({...form, nombre: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
-                    Nombre para Q10 ID <HelpCircle size={14} />
-                  </label>
-                  <input 
-                    type="text" 
-                    className="input-premium"
-                    value={form.nombreQ10Id}
-                    onChange={e => setForm({...form, nombreQ10Id: e.target.value})}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
-                    Nº Res. autorización <HelpCircle size={14} />
-                  </label>
-                  <input 
-                    type="text" 
-                    className="input-premium"
-                    value={form.resAutorizacion}
-                    onChange={e => setForm({...form, resAutorizacion: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
-                    F. Res. autorización <HelpCircle size={14} />
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <Calendar size={16} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              {activeTab === 'general' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Código *</label>
                     <input 
-                      type="date" 
+                      type="text" 
                       className="input-premium"
-                      value={form.fechaRes}
-                      onChange={e => setForm({...form, fechaRes: e.target.value})}
+                      value={form.codigo}
+                      onChange={e => setForm({...form, codigo: e.target.value})}
                     />
                   </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Aplica para preinscripciones</label>
-                  <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="radio" checked={form.preinscripciones === 'Sí'} onChange={() => setForm({...form, preinscripciones: 'Sí'})} style={{ accentColor: 'var(--primary)' }} /> Sí
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="radio" checked={form.preinscripciones === 'No'} onChange={() => setForm({...form, preinscripciones: 'No'})} style={{ accentColor: 'var(--primary)' }} /> No
-                    </label>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Nombre *</label>
+                    <input 
+                      type="text" 
+                      className="input-premium"
+                      value={form.nombre}
+                      onChange={e => setForm({...form, nombre: e.target.value})}
+                    />
                   </div>
-                </div>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
+                      Nombre para Q10 ID <HelpCircle size={14} />
+                    </label>
+                    <input 
+                      type="text" 
+                      className="input-premium"
+                      value={form.nombreQ10Id}
+                      onChange={e => setForm({...form, nombreQ10Id: e.target.value})}
+                    />
+                  </div>
 
-                <div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
-                    Aplica para grupos * <HelpCircle size={14} />
-                  </label>
-                  <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="radio" checked={form.grupos === 'Sí'} onChange={() => setForm({...form, grupos: 'Sí'})} style={{ accentColor: 'var(--primary)' }} /> Sí
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
+                      Nº Res. autorización <HelpCircle size={14} />
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="radio" checked={form.grupos === 'No'} onChange={() => setForm({...form, grupos: 'No'})} style={{ accentColor: 'var(--primary)' }} /> No
-                    </label>
+                    <input 
+                      type="text" 
+                      className="input-premium"
+                      value={form.resAutorizacion}
+                      onChange={e => setForm({...form, resAutorizacion: e.target.value})}
+                    />
                   </div>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Tipo de evaluación *</label>
-                  <select 
-                    className="input-premium"
-                    value={form.tipoEvaluacion}
-                    onChange={e => setForm({...form, tipoEvaluacion: e.target.value})}
-                  >
-                    <option value="Cuantitativo">Cuantitativo</option>
-                    <option value="Cualitativo">Cualitativo</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Categoría *</label>
-                  <select 
-                    className="input-premium"
-                    value={form.categoria}
-                    onChange={e => setForm({...form, categoria: e.target.value})}
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="Diplomado">Diplomado</option>
-                    <option value="Técnico">Técnico Laboral</option>
-                    <option value="Curso">Curso Corto</option>
-                    <option value="Bachillerato">Bachillerato</option>
-                  </select>
-                </div>
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
+                      F. Res. autorización <HelpCircle size={14} />
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <Calendar size={16} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                      <input 
+                        type="date" 
+                        className="input-premium"
+                        value={form.fechaRes}
+                        onChange={e => setForm({...form, fechaRes: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Aplica para preinscripciones</label>
+                    <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+                        <input type="radio" checked={form.preinscripciones === 'Sí'} onChange={() => setForm({...form, preinscripciones: 'Sí'})} style={{ accentColor: 'var(--primary)' }} /> Sí
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+                        <input type="radio" checked={form.preinscripciones === 'No'} onChange={() => setForm({...form, preinscripciones: 'No'})} style={{ accentColor: 'var(--primary)' }} /> No
+                      </label>
+                    </div>
+                  </div>
 
-                <div style={{ gridColumn: 'span 1' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Estado *</label>
-                  <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="radio" checked={form.estado === 'Activo'} onChange={() => setForm({...form, estado: 'Activo'})} style={{ accentColor: 'var(--primary)' }} /> Activo
+                  <div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
+                      Aplica para grupos * <HelpCircle size={14} />
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
-                      <input type="radio" checked={form.estado === 'Inactivo'} onChange={() => setForm({...form, estado: 'Inactivo'})} style={{ accentColor: 'var(--primary)' }} /> Inactivo
-                    </label>
+                    <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+                        <input type="radio" checked={form.grupos === 'Sí'} onChange={() => setForm({...form, grupos: 'Sí'})} style={{ accentColor: 'var(--primary)' }} /> Sí
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+                        <input type="radio" checked={form.grupos === 'No'} onChange={() => setForm({...form, grupos: 'No'})} style={{ accentColor: 'var(--primary)' }} /> No
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Tipo de evaluación *</label>
+                    <select 
+                      className="input-premium"
+                      value={form.tipoEvaluacion}
+                      onChange={e => setForm({...form, tipoEvaluacion: e.target.value})}
+                    >
+                      <option value="Cuantitativo">Cuantitativo</option>
+                      <option value="Cualitativo">Cualitativo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Categoría *</label>
+                    <select 
+                      className="input-premium"
+                      value={form.categoria}
+                      onChange={e => setForm({...form, categoria: e.target.value})}
+                    >
+                      <option value="">Seleccione</option>
+                      <option value="Diplomado">Diplomado</option>
+                      <option value="Técnico">Técnico Laboral</option>
+                      <option value="Curso">Curso Corto</option>
+                      <option value="Bachillerato">Bachillerato</option>
+                    </select>
+                  </div>
+
+                  <div style={{ gridColumn: 'span 1' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Estado *</label>
+                    <div style={{ display: 'flex', gap: '20px', marginTop: '12px' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+                        <input type="radio" checked={form.estado === 'Activo'} onChange={() => setForm({...form, estado: 'Activo'})} style={{ accentColor: 'var(--primary)' }} /> Activo
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', cursor: 'pointer' }}>
+                        <input type="radio" checked={form.estado === 'Inactivo'} onChange={() => setForm({...form, estado: 'Inactivo'})} style={{ accentColor: 'var(--primary)' }} /> Inactivo
+                      </label>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* PENSUM TAB CONTENT */
+                <div className="animate-fade">
+                  {/* Pensum Configuration */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', padding: '20px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', marginBottom: '32px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Nota de aprobación *</label>
+                      <input 
+                        type="text" 
+                        className="input-premium"
+                        value={form.notaAprobacion}
+                        onChange={e => setForm({...form, notaAprobacion: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Valor máximo calificación *</label>
+                      <input 
+                        type="text" 
+                        className="input-premium"
+                        value={form.valorMaximo}
+                        onChange={e => setForm({...form, valorMaximo: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>% Inasistencia permitido *</label>
+                      <input 
+                        type="text" 
+                        className="input-premium"
+                        value={form.porcentajeInasistencia}
+                        onChange={e => setForm({...form, porcentajeInasistencia: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Subjects List in Pensum */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#1e293b', margin: 0 }}>Materias del Plan</h3>
+                    <button 
+                      className="btn-premium"
+                      onClick={() => setShowAssignSubject(true)}
+                      style={{ background: 'var(--primary)', color: 'white', padding: '8px 16px', fontSize: '13px' }}
+                    >
+                      <Plus size={16} /> Asignar asignatura
+                    </button>
+                  </div>
+
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead style={{ background: '#f9fafb' }}>
+                        <tr>
+                          <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>Código</th>
+                          <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>Asignatura</th>
+                          <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>Nivel</th>
+                          <th style={{ textAlign: 'center', padding: '12px 20px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>Créditos</th>
+                          <th style={{ textAlign: 'center', padding: '12px 20px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>IH Semanal / Total</th>
+                          <th style={{ textAlign: 'center', padding: '12px 20px', fontSize: '12px', color: '#64748b', fontWeight: '800' }}>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.keys(groupedSubjects).length > 0 ? (
+                          Object.keys(groupedSubjects).sort().map(nivel => (
+                            <React.Fragment key={nivel}>
+                              <tr style={{ background: '#f1f5f9' }}>
+                                <td colSpan={6} style={{ padding: '8px 20px', fontSize: '12px', fontWeight: '900', color: 'var(--primary)', textTransform: 'uppercase' }}>
+                                  {nivel}
+                                </td>
+                              </tr>
+                              {groupedSubjects[nivel].map((s: any) => (
+                                <tr key={s.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '12px 20px', fontSize: '13px', color: '#64748b' }}>{s.codigo}</td>
+                                  <td style={{ padding: '12px 20px', fontSize: '13px', color: '#1e293b', fontWeight: '600' }}>{s.nombre}</td>
+                                  <td style={{ padding: '12px 20px', fontSize: '13px', color: '#64748b' }}>{s.nivel}</td>
+                                  <td style={{ textAlign: 'center', padding: '12px 20px', fontSize: '13px', color: '#1e293b' }}>{s.creditos}</td>
+                                  <td style={{ textAlign: 'center', padding: '12px 20px', fontSize: '13px' }}>
+                                    <span style={{ color: '#1e293b', fontWeight: '600' }}>{s.ihSemanal} h</span> / <span style={{ color: '#64748b' }}>{s.ihTotal} h</span>
+                                  </td>
+                                  <td style={{ textAlign: 'center', padding: '12px 20px' }}>
+                                    <button 
+                                      onClick={() => removeAssignment(s.id)}
+                                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={6} style={{ padding: '40px 20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
+                              No hay asignaturas vinculadas a este plan
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -449,6 +658,90 @@ export default function ProgramsPage() {
                   Eliminar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN SUBJECT MODAL (INNER) */}
+      {showAssignSubject && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="animate-fade" style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '500px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ background: '#f8fafc', padding: '16px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '16px', fontWeight: '800' }}>Vincular Asignatura</h3>
+              <button onClick={() => setShowAssignSubject(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={18} /></button>
+            </div>
+            <div style={{ padding: '24px' }}>
+              <div style={{ display: 'grid', gap: '20px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Seleccionar Asignatura *</label>
+                  <select 
+                    className="input-premium"
+                    value={newAssignment.subjectId}
+                    onChange={e => setNewAssignment({...newAssignment, subjectId: e.target.value})}
+                  >
+                    <option value="">Seleccione una materia</option>
+                    {availableSubjects.map(s => (
+                      <option key={s.id} value={s.id}>{s.codigo} - {s.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Nivel / Semestre *</label>
+                  <select 
+                    className="input-premium"
+                    value={newAssignment.nivel}
+                    onChange={e => setNewAssignment({...newAssignment, nivel: e.target.value})}
+                  >
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                      <option key={n} value={`Bimestre N° ${n}`}>Bimestre N° {n}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Créditos *</label>
+                    <input 
+                      type="number" 
+                      className="input-premium"
+                      value={newAssignment.creditos}
+                      onChange={e => setNewAssignment({...newAssignment, creditos: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>IH Semanal *</label>
+                    <input 
+                      type="number" 
+                      className="input-premium"
+                      value={newAssignment.ihSemanal}
+                      onChange={e => setNewAssignment({...newAssignment, ihSemanal: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>IH Total *</label>
+                  <input 
+                    type="number" 
+                    className="input-premium"
+                    value={newAssignment.ihTotal}
+                    onChange={e => setNewAssignment({...newAssignment, ihTotal: e.target.value})}
+                  />
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button 
+                onClick={() => setShowAssignSubject(false)}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleAddAssignment}
+                style={{ padding: '8px 24px', borderRadius: '8px', border: 'none', background: 'var(--primary)', color: 'white', fontSize: '13px', fontWeight: '800', cursor: 'pointer' }}
+              >
+                Vincular
+              </button>
             </div>
           </div>
         </div>

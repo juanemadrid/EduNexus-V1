@@ -92,16 +92,16 @@ const navigation: Record<string, NavItem[]> = {
     { name: 'Estructuración', icon: <Database size={18} />, subItems: [
       { name: 'Asignaturas', href: '/dashboard/academic/structuring/subjects' },
       { name: 'Programas', href: '/dashboard/academic/structuring/programs' },
-      { name: 'Sedes - jornadas - programas', href: '#' },
-      { name: 'Cursos', href: '#' },
+      { name: 'Sedes - jornadas - programas', href: '/dashboard/academic/structuring/sede-jornada' },
+      { name: 'Cursos', href: '/dashboard/academic/structuring/cursos' },
       { name: 'Cerrar - cursos', href: '#' },
       { name: 'Preguntas personalizadas programas', href: '#' },
-      { name: 'Grupos', href: '#' },
+      { name: 'Grupos', href: '/dashboard/academic/structuring/grupos' },
       { name: 'Agrupaciones', href: '#' },
-      { name: 'Parámetros de evaluación asignaturas', href: '#' },
+      { name: 'Parámetros de evaluación asignaturas', href: '/dashboard/academic/structuring/eval-params' },
       { name: 'Parámetros evaluaciones', href: '#' },
-      { name: 'Tipos de cancelaciones', href: '#' },
-      { name: 'Causas de cancelación', href: '#' },
+      { name: 'Tipos de cancelaciones', href: '/dashboard/academic/structuring/cancellation-types' },
+      { name: 'Causas de cancelación', href: '/dashboard/academic/structuring/cancellation-causes' },
       { name: 'Restricciones de evaluación', href: '#' },
       { name: 'Requisitos de matrícula', href: '#' },
       { name: 'Requisitos de grado', href: '#' },
@@ -120,6 +120,9 @@ const navigation: Record<string, NavItem[]> = {
     { name: 'Estructuración', icon: <Database size={18} />, subItems: [
       { name: 'Configuración', href: '#' }
     ]}
+  ],
+  'Informes': [
+    { name: 'Panel de informes', icon: <BarChart3 size={18} />, href: '/dashboard/reports' }
   ]
 };
 
@@ -319,41 +322,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav style={{ display: 'flex', gap: '8px', flex: 2, justifyContent: 'center' }}>
-          {Object.entries(navigation).map(([category, items]) => (
-            <div key={category} style={{ position: 'relative', paddingBottom: '15px', marginBottom: '-15px' }} onMouseEnter={() => handleMouseEnter(category)} onMouseLeave={handleMouseLeave}>
-              <button style={{ 
-                background: activeMenu === category ? 'var(--primary-glow)' : 'none', 
-                border: 'none', padding: '10px 18px', borderRadius: '12px', fontSize: '14.5px', fontWeight: '700', 
-                color: activeMenu === category ? 'var(--primary)' : 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-              }}>
-                {category} <ChevronDown size={14} style={{ opacity: 0.5 }} />
-              </button>
-              {activeMenu === category && (
-                <div style={{ position: 'absolute', top: '100%', left: '0', minWidth: '240px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px', marginTop: '5px', zIndex: 1000 }}>
-                  {items.map((item) => (
-                    <div key={item.name} style={{ position: 'relative' }} onMouseEnter={() => setActiveSubMenu(item.name)}>
-                      <Link href={item.href || '#'} style={{ 
-                        padding: '12px 14px', borderRadius: '12px', fontSize: '13.5px', fontWeight: '600', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        background: (activeSubMenu === item.name || pathname === item.href) ? 'var(--primary-glow)' : 'transparent',
-                        color: (activeSubMenu === item.name || pathname === item.href) ? 'var(--primary)' : 'var(--text-dim)',
-                      }}>
-                        {item.name} {item.subItems && <ChevronRight size={14} />}
-                      </Link>
-                      {item.subItems && activeSubMenu === item.name && (
-                        <div style={{ position: 'absolute', top: '-12px', left: '100%', minWidth: '220px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px' }}>
-                          {item.subItems.map((sub) => (
-                            <Link key={sub.name} href={sub.href} style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: pathname === sub.href ? 'var(--primary)' : 'var(--text-dim)', textDecoration: 'none', display: 'block', background: pathname === sub.href ? 'var(--primary-glow)' : 'transparent' }}>
-                              {sub.name}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+          {Object.entries(navigation).map(([category, items]) => {
+            if (category === 'Informes') {
+              return (
+                <Link key={category} href="/dashboard/reports" style={{ textDecoration: 'none' }}>
+                  <button style={{ 
+                    background: pathname.startsWith('/dashboard/reports') ? 'var(--primary-glow)' : 'none', 
+                    border: 'none', padding: '10px 18px', borderRadius: '12px', fontSize: '14.5px', fontWeight: '700', 
+                    color: pathname.startsWith('/dashboard/reports') ? 'var(--primary)' : 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                  }}>
+                    {category}
+                  </button>
+                </Link>
+              );
+            }
+
+            return (
+              <div key={category} style={{ position: 'relative', paddingBottom: '15px', marginBottom: '-15px' }} onMouseEnter={() => handleMouseEnter(category)} onMouseLeave={handleMouseLeave}>
+                <button style={{ 
+                  background: activeMenu === category ? 'var(--primary-glow)' : 'none', 
+                  border: 'none', padding: '10px 18px', borderRadius: '12px', fontSize: '14.5px', fontWeight: '700', 
+                  color: activeMenu === category ? 'var(--primary)' : 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+                }}>
+                  {category} <ChevronDown size={14} style={{ opacity: 0.5 }} />
+                </button>
+                {activeMenu === category && (
+                  <div style={{ position: 'absolute', top: '100%', left: '0', minWidth: '240px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px', marginTop: '5px', zIndex: 1000 }}>
+                    {items.map((item) => (
+                      <div key={item.name} style={{ position: 'relative' }} onMouseEnter={() => setActiveSubMenu(item.name)}>
+                        <Link href={item.href || '#'} style={{ 
+                          padding: '12px 14px', borderRadius: '12px', fontSize: '13.5px', fontWeight: '600', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          background: (activeSubMenu === item.name || pathname === item.href) ? 'var(--primary-glow)' : 'transparent',
+                          color: (activeSubMenu === item.name || pathname === item.href) ? 'var(--primary)' : 'var(--text-dim)',
+                        }}>
+                          {item.name} {item.subItems && <ChevronRight size={14} />}
+                        </Link>
+                        {item.subItems && activeSubMenu === item.name && (
+                          <div style={{ position: 'absolute', top: '-12px', left: '100%', minWidth: '220px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px' }}>
+                            {item.subItems.map((sub) => (
+                              <Link key={sub.name} href={sub.href} style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: pathname === sub.href ? 'var(--primary)' : 'var(--text-dim)', textDecoration: 'none', display: 'block', background: pathname === sub.href ? 'var(--primary-glow)' : 'transparent' }}>
+                                {sub.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1, justifyContent: 'flex-end' }}>

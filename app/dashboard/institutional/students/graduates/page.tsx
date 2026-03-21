@@ -85,7 +85,7 @@ export default function GraduatesPage() {
               onChange={(e) => setFilters({...filters, period: e.target.value})}
             >
               <option>Seleccione</option>
-              <option>2024-1</option>
+              <option>2025-1</option>
               <option>2023-2</option>
               <option>2023-1</option>
             </select>
@@ -133,7 +133,7 @@ export default function GraduatesPage() {
                    </td>
                    <td style={{ padding: '14px 24px' }}>
                       <div style={{ fontSize: '13px', color: '#334155' }}>{s.details?.program || 'Bachillerato Académico'}</div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>Periodo: {s.details?.period || '2024-1'}</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>Periodo: {s.details?.period || '2025-1'}</div>
                    </td>
                    <td style={{ padding: '14px 24px', textAlign: 'center' }}>
                       <span style={{ background: '#ecfdf5', color: 'var(--primary)', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '700' }}>Solvente</span>

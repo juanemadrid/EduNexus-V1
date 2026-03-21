@@ -92,7 +92,7 @@ export default function TicketsPage() {
             <div style={{ flex: 1, minWidth: '150px' }}>
               <select className="input-premium" style={{ paddingRight: '40px' }}>
                 <option>2026</option>
-                <option>2025</option>
+                <option>2026</option>
               </select>
             </div>
             <div style={{ flex: 1, minWidth: '150px' }}>
