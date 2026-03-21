@@ -1,8 +1,9 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
 import DateRangePicker from '@/components/DateRangePicker';
-import { Search, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, ChevronDown } from 'lucide-react';
+import { Search, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, ChevronDown, BarChart3 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const INITIAL_SUBJECTS = [
   { id: '1', codigo: '96', nombre: 'ACTIVIDADES, RECREO DEPORTIVAS Y ACUATICAS', abreviacion: 'ARDA', estado: 'Activa' },
@@ -20,6 +21,7 @@ const INITIAL_SUBJECTS = [
 ];
 
 export default function SubjectsPage() {
+  const router = useRouter();
   const [subjects, setSubjects] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -200,6 +202,13 @@ export default function SubjectsPage() {
               </button>
               <button className="btn-premium" style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none' }}>
                 <Download size={18} /> Exportar
+              </button>
+              <button 
+                className="btn-premium" 
+                style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+                onClick={() => router.push('/dashboard/reports')}
+              >
+                <BarChart3 size={18} /> Informes
               </button>
             </div>
           </div>

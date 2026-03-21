@@ -2,10 +2,10 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import SearchableBarrioInput from '@/components/SearchableBarrioInput';
 
-import { Search, Eye, ChevronRight, ChevronLeft, Plus, ChevronDown, X, MapPin, Save } from 'lucide-react';
+import { Search, Eye, ChevronRight, ChevronLeft, Plus, ChevronDown, X, MapPin, Save, BarChart3, Download } from 'lucide-react';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ALL_CITIES, BARRIOS_BY_CITY } from '@/lib/colombiaData';
 import { PERIODOS, TIPOS_IDENTIFICACION, GENEROS, SEDES_JORNADAS } from '@/lib/institutionalParams';
 
@@ -52,6 +52,7 @@ const SearchableCityInput = ({ value, onChange, onSelect, placeholder }: {
 };
 
 function BasicInfoContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [localStudents, setLocalStudents] = useState<any[]>([]);
@@ -187,6 +188,19 @@ function BasicInfoContent() {
               value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
           </div>
           <button className="btn-premium" style={{ height: '48px', padding: '0 24px', background: 'var(--primary)', color: 'white' }}>Buscar</button>
+          <button 
+            className="btn-premium" 
+            style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+            onClick={() => router.push('/dashboard/reports')}
+          >
+            <BarChart3 size={18} /> Informes
+          </button>
+          <button 
+            className="btn-premium" 
+            style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Download size={18} /> Exportar
+          </button>
           <button onClick={() => setShowAdvanced(!showAdvanced)}
             style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
             Búsqueda avanzada <ChevronDown size={14} style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />

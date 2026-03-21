@@ -5,8 +5,10 @@ import { Users, GraduationCap, DollarSign, AlertCircle, ArrowUpRight, BookOpen, 
 import { getDashboardStats, DashboardStats, getAcademicActivity, Activity } from '@/lib/data';
 import { MOCK_PAYMENTS } from '@/lib/mockData';
 import TimeAgo from '@/components/TimeAgo';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [statsData, setStatsData] = useState<DashboardStats | null>(null);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [showAlertDetails, setShowAlertDetails] = useState(false);
@@ -126,7 +128,10 @@ export default function DashboardPage() {
         <div className="glass-panel" style={{ padding: '32px', minHeight: '400px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
              <h3 style={{ fontWeight: '800', fontSize: '20px' }}>Actividad Académica</h3>
-             <button style={{ color: 'var(--primary)', border: 'none', background: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+             <button 
+               onClick={() => router.push('/dashboard/reports')}
+               style={{ color: 'var(--primary)', border: 'none', background: 'none', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+             >
                Ver reportes <ArrowUpRight size={16} />
              </button>
           </div>
