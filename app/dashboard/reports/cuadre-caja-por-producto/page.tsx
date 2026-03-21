@@ -55,53 +55,15 @@ export default function CuadreCajaProductoPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 220px) 1fr', gap: '20px', alignItems: 'center', marginBottom: '24px' }}>
             
             <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-              Filtrar por
+              Fechas <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <div>
-              <select 
-                className="input-premium" 
-                style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} 
-                value={form.filtroFecha} 
-                onChange={e => handleChange('filtroFecha', e.target.value)}
-              >
-                <option value="Período">Período</option>
-                <option value="Fechas">Fechas</option>
-              </select>
+              <DateRangePicker 
+                value={form.fechaRango} 
+                onChange={(val) => { setTouched(p => ({...p, fechaRango: true})); handleChange('fechaRango', val); }} 
+              />
+              {isInvalid('fechaRango') && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
             </div>
-
-            {form.filtroFecha === 'Período' ? (
-              <>
-                <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                  Período <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <div>
-                  <select 
-                    className="input-premium" 
-                    style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: isInvalid('periodo') ? '1px solid #ef4444' : '1px solid #e2e8f0' }} 
-                    value={form.periodo} 
-                    onChange={e => { setTouched(p => ({...p, periodo: true})); handleChange('periodo', e.target.value); }}
-                  >
-                    <option value="">Seleccione</option>
-                    <option value="2026-01">2026-01</option>
-                    <option value="2026-02">2026-02</option>
-                  </select>
-                  {isInvalid('periodo') && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
-                </div>
-              </>
-            ) : (
-              <>
-                <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                  Fechas <span style={{ color: '#ef4444' }}>*</span>
-                </label>
-                <div>
-                  <DateRangePicker 
-                    value={form.fechaRango} 
-                    onChange={(val) => { setTouched(p => ({...p, fechaRango: true})); handleChange('fechaRango', val); }} 
-                  />
-                  {isInvalid('fechaRango') && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
-                </div>
-              </>
-            )}
 
             <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
               Valor inicial de efectivo

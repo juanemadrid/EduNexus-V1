@@ -1,30 +1,22 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
-import DateRangePicker from '@/components/DateRangePicker';
 import React, { useState } from 'react';
 import { FileDown } from 'lucide-react';
 
 export default function CarteraGeneralPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ 
-    filtroFecha: 'Período',
-    sede: 'Todas', 
-    periodo: '2026-01',
-    fechaRango: 'Hoy',
-    programaId: 'Todos',
-    cursoId: 'Todos',
+    periodo: '',
+    sede: 'Todas',
+    programa: 'Todos',
+    curso: 'Todos',
     incluirPazSalvo: false
   });
-  const [touched, setTouched] = useState({ periodo: false, fechaRango: false });
+  const [touched, setTouched] = useState({ periodo: false });
 
   const handleCharge = () => {
-    setTouched({ periodo: true, fechaRango: true });
-    
-    const isPeriodValid = form.filtroFecha === 'Período' ? !!form.periodo : true;
-    const isDateValid = form.filtroFecha === 'Fechas' ? !!form.fechaRango : true;
-
-    if (!isPeriodValid || !isDateValid) return;
-
+    setTouched({ periodo: true });
+    if (!form.periodo) return;
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
@@ -36,152 +28,106 @@ export default function CarteraGeneralPage() {
     setForm(p => ({ ...p, [field]: value }));
   };
 
-  const isInvalid = (field: keyof typeof form) => {
-    if (field === 'periodo' && form.filtroFecha !== 'Período') return false;
-    if (field === 'fechaRango' && form.filtroFecha !== 'Fechas') return false;
-    return touched[field as keyof typeof touched] && !form[field as keyof typeof touched];
-  };
+  const isInvalidPeriodo = touched.periodo && !form.periodo;
 
   return (
     <DashboardLayout>
       <div className="glass-panel" style={{ maxWidth: '850px', margin: '0 auto', background: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 20px 40px -15px rgba(0,0,0,0.05)' }}>
-         <div style={{ marginBottom: '30px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
-           <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', margin: '0 0 6px 0' }}>
-             Cartera general
-           </h1>
-           <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-             Permite obtener el saldo que adeuda cada uno de los estudiantes con su respectiva información de contacto de ellos y de sus codeudores.
-           </p>
-         </div>
+        <div style={{ marginBottom: '30px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', margin: '0 0 6px 0' }}>
+            Cartera General
+          </h1>
+          <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+            Permite exportar el listado de saldos pendientes de todos los estudiantes agrupados por sede, programa y curso para el período seleccionado.
+          </p>
+        </div>
 
-         <div style={{ padding: '0 40px' }}>
-           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 220px) 1fr', gap: '20px', alignItems: 'center', marginBottom: '24px' }}>
-              
-              <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                Filtrar por
-              </label>
-              <div>
-                <select 
-                  className="input-premium" 
-                  style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} 
-                  value={form.filtroFecha} 
-                  onChange={e => handleChange('filtroFecha', e.target.value)}
-                >
-                  <option value="Período">Período</option>
-                  <option value="Fechas">Fechas</option>
-                </select>
+        <div style={{ padding: '0 40px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 220px) 1fr', gap: '20px', alignItems: 'center', marginBottom: '24px' }}>
+
+            <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
+              Período <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <div>
+              <select
+                className="input-premium"
+                style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: isInvalidPeriodo ? '1px solid #ef4444' : '1px solid #e2e8f0' }}
+                value={form.periodo}
+                onChange={e => { setTouched({ periodo: true }); handleChange('periodo', e.target.value); }}
+              >
+                <option value="">Seleccione</option>
+                <option value="2026-01">2026-01</option>
+                <option value="2026-02">2026-02</option>
+              </select>
+              {isInvalidPeriodo && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
+            </div>
+
+            <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
+              Sede
+            </label>
+            <div>
+              <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.sede} onChange={e => handleChange('sede', e.target.value)}>
+                <option value="Todas">Todas</option>
+              </select>
+            </div>
+
+            <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
+              Programa
+            </label>
+            <div>
+              <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.programa} onChange={e => handleChange('programa', e.target.value)}>
+                <option value="Todos">Todos</option>
+              </select>
+            </div>
+
+            <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
+              Curso
+            </label>
+            <div>
+              <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.curso} onChange={e => handleChange('curso', e.target.value)}>
+                <option value="Todos">Todos</option>
+              </select>
+            </div>
+
+            <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
+              Incluir créditos en Paz y salvo
+            </label>
+            <div>
+              <div
+                onClick={() => handleChange('incluirPazSalvo', !form.incluirPazSalvo)}
+                style={{
+                  width: '60px', height: '24px',
+                  background: form.incluirPazSalvo ? '#10b981' : '#f1f5f9',
+                  borderRadius: '12px', position: 'relative', cursor: 'pointer',
+                  border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center',
+                  justifyContent: form.incluirPazSalvo ? 'flex-end' : 'flex-start',
+                  padding: '0 2px', transition: 'background 0.2s'
+                }}
+              >
+                <div style={{ width: '28px', height: '20px', background: 'white', borderRadius: '10px', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '700', color: form.incluirPazSalvo ? '#10b981' : '#64748b' }}>
+                  {form.incluirPazSalvo ? 'Si' : 'No'}
+                </div>
               </div>
+            </div>
 
-              {form.filtroFecha === 'Período' ? (
-                <>
-                  <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                    Período <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <div>
-                    <select 
-                      className="input-premium" 
-                      style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: isInvalid('periodo') ? '1px solid #ef4444' : '1px solid #e2e8f0' }} 
-                      value={form.periodo} 
-                      onChange={e => { setTouched(p => ({...p, periodo: true})); handleChange('periodo', e.target.value); }}
-                    >
-                      <option value="">Seleccione</option>
-                      <option value="2026-01">2026-01</option>
-                    </select>
-                    {isInvalid('periodo') && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
-                  </div>
-                </>
-              ) : (
-                <>
-                  <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                    Fechas <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <div>
-                    <DateRangePicker 
-                      value={form.fechaRango} 
-                      onChange={(val) => { setTouched(p => ({...p, fechaRango: true})); handleChange('fechaRango', val); }} 
-                    />
-                    {isInvalid('fechaRango') && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
-                  </div>
-                </>
-              )}
+          </div>
+        </div>
 
-              <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                Sede
-              </label>
-              <div>
-                <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.sede} onChange={e => handleChange('sede', e.target.value)}>
-                  <option value="Todas">Todas</option>
-                  <option value="Principal">Principal</option>
-                </select>
-              </div>
-
-              <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                Programa
-              </label>
-              <div>
-                <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.programaId} onChange={e => handleChange('programaId', e.target.value)}>
-                  <option value="Todos">Todos</option>
-                </select>
-              </div>
-
-              <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                Curso
-              </label>
-              <div>
-                <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.cursoId} onChange={e => handleChange('cursoId', e.target.value)}>
-                  <option value="Todos">Todos</option>
-                </select>
-              </div>
-
-              <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                Incluir créditos en Paz y salvo
-              </label>
-              <div>
-                  <div 
-                    onClick={() => handleChange('incluirPazSalvo', !form.incluirPazSalvo)}
-                    style={{ 
-                      width: '64px', 
-                      height: '24px', 
-                      background: '#f1f5f9', 
-                      borderRadius: '12px', 
-                      display: 'flex', 
-                      position: 'relative', 
-                      cursor: 'pointer',
-                      border: '1px solid #e2e8f0',
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: form.incluirPazSalvo ? '#cbd5e1' : '#64748b', zIndex: 1 }}>No</div>
-                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: form.incluirPazSalvo ? '#10b981' : '#cbd5e1', zIndex: 1 }}>Sí</div>
-                    <div style={{ position: 'absolute', top: 0, left: form.incluirPazSalvo ? '50%' : 0, width: '50%', height: '100%', background: 'white', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', transition: 'left 0.2s ease' }}></div>
-                  </div>
-              </div>
-           </div>
-         </div>
-
-         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
-           <button 
-             className="btn-premium" 
-             style={{ 
-               background: '#10b981', 
-               color: 'white', 
-               display: 'flex', 
-               alignItems: 'center', 
-               gap: '8px', 
-               padding: '12px 24px', 
-               fontSize: '13px', 
-               fontWeight: '700', 
-               opacity: isLoading ? 0.7 : 1, 
-               cursor: isLoading ? 'wait' : 'pointer', 
-               border: 'none' 
-             }} 
-             onClick={handleCharge} 
-             disabled={isLoading}
-           >
-             <FileDown size={18} />
-             {isLoading ? 'Exportando report...' : 'Exportar reporte'}
-           </button>
-         </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+          <button
+            className="btn-premium"
+            style={{
+              background: '#10b981', color: 'white', display: 'flex', alignItems: 'center',
+              gap: '8px', padding: '12px 24px', fontSize: '13px', fontWeight: '700',
+              opacity: isLoading ? 0.7 : 1, cursor: isLoading ? 'wait' : 'pointer', border: 'none'
+            }}
+            onClick={handleCharge}
+            disabled={isLoading}
+          >
+            <FileDown size={18} />
+            {isLoading ? 'Exportando...' : 'Exportar reporte'}
+          </button>
+        </div>
       </div>
     </DashboardLayout>
   );

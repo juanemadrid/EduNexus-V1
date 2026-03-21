@@ -67,21 +67,21 @@ const navigation: Record<string, NavItem[]> = {
       { name: 'Medios de contactos', href: '/dashboard/institutional/commercial/contact-media' },
       { name: 'Estados de negocio', href: '/dashboard/institutional/commercial/business-status' },
       { name: 'Campos personalizados', href: '/dashboard/institutional/commercial/custom-fields' },
-      { name: 'Causas', href: '#' },
-      { name: 'Importar oportunidades', href: '#' },
-      { name: 'Cambio masivo de asesor', href: '#' }
+      { name: 'Causas', href: '/dashboard/institutional/commercial/causes' },
+      { name: 'Importar oportunidades', href: '/dashboard/institutional/commercial/import-opportunities' },
+      { name: 'Cambio masivo de asesor', href: '/dashboard/institutional/commercial/mass-advisor-change' }
     ]},
     { name: 'Establecimiento', icon: <Building size={18} />, subItems: [
-      { name: 'Información general', href: '#' }
+      { name: 'Información general', href: '/dashboard/institutional/establishment/general-info' }
     ]},
     { name: 'Admisiones', icon: <BookOpen size={18} />, subItems: [
-      { name: 'Panel de admisiones', href: '#' }
+      { name: 'Panel de admisiones', href: '/dashboard/institutional/admissions/panel' }
     ]},
     { name: 'Pedidos Q10 ID (Carnetización)', icon: <CreditCard size={18} />, subItems: [
-      { name: 'Solicitudes', href: '#' }
+      { name: 'Solicitudes', href: '/dashboard/institutional/id-cards/requests' }
     ]},
     { name: 'Estructuración', icon: <Database size={18} />, subItems: [
-      { name: 'Configuración', href: '#' }
+      { name: 'Configuración', href: '/dashboard/institutional/structuring/configuration' }
     ]}
   ],
   'Académico': [
@@ -94,18 +94,18 @@ const navigation: Record<string, NavItem[]> = {
       { name: 'Programas', href: '/dashboard/academic/structuring/programs' },
       { name: 'Sedes - jornadas - programas', href: '/dashboard/academic/structuring/sede-jornada' },
       { name: 'Cursos', href: '/dashboard/academic/structuring/cursos' },
-      { name: 'Cerrar - cursos', href: '#' },
-      { name: 'Preguntas personalizadas programas', href: '#' },
+      { name: 'Cerrar - cursos', href: '/dashboard/academic/structuring/close-courses' },
+      { name: 'Preguntas personalizadas programas', href: '/dashboard/academic/structuring/custom-questions-programs' },
       { name: 'Grupos', href: '/dashboard/academic/structuring/grupos' },
-      { name: 'Agrupaciones', href: '#' },
+      { name: 'Agrupaciones', href: '/dashboard/academic/structuring/groupings' },
       { name: 'Parámetros de evaluación asignaturas', href: '/dashboard/academic/structuring/eval-params' },
-      { name: 'Parámetros evaluaciones', href: '#' },
+      { name: 'Parámetros evaluaciones', href: '/dashboard/academic/structuring/eval-parameters' },
       { name: 'Tipos de cancelaciones', href: '/dashboard/academic/structuring/cancellation-types' },
       { name: 'Causas de cancelación', href: '/dashboard/academic/structuring/cancellation-causes' },
-      { name: 'Restricciones de evaluación', href: '#' },
-      { name: 'Requisitos de matrícula', href: '#' },
-      { name: 'Requisitos de grado', href: '#' },
-      { name: 'Parametrización de constancias y certificados', href: '#' },
+      { name: 'Restricciones de evaluación', href: '/dashboard/academic/structuring/eval-restrictions' },
+      { name: 'Requisitos de matrícula', href: '/dashboard/academic/structuring/enrollment-requirements' },
+      { name: 'Requisitos de grado', href: '/dashboard/academic/structuring/graduation-requirements' },
+      { name: 'Parametrización de constancias y certificados', href: '/dashboard/academic/structuring/certificates-parameters' },
       { name: 'Categorías examen admisión', href: '/dashboard/academic/structuring/admission-categories' }
     ]}
   ],
@@ -116,9 +116,14 @@ const navigation: Record<string, NavItem[]> = {
       { name: 'Registrar codeudor', href: '/dashboard/treasury/codebtors/register' },
       { name: 'Información básica', href: '/dashboard/treasury/codebtors/basic-info' }
     ]},
-    { name: 'Administrar notas crédito', icon: <FileText size={18} />, href: '#' },
+    { name: 'Administrar notas crédito', icon: <FileText size={18} />, href: '/dashboard/treasury/credit-notes' },
     { name: 'Estructuración', icon: <Database size={18} />, subItems: [
-      { name: 'Configuración', href: '#' }
+      { name: 'Impuestos', href: '/dashboard/treasury/taxes' },
+      { name: 'Productos', href: '/dashboard/treasury/products' },
+      { name: 'Descuentos', href: '/dashboard/treasury/structuring/discounts' },
+      { name: 'Cuentas', href: '/dashboard/treasury/structuring/accounts' },
+      { name: 'Terceros', href: '/dashboard/treasury/structuring/third-parties' },
+      { name: 'Formas de pago', href: '/dashboard/treasury/structuring/payment-methods' }
     ]}
   ],
   'Informes': [

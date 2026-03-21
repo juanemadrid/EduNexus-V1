@@ -45,44 +45,15 @@ export default function CarteraPagosPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, 220px) 1fr', gap: '20px', alignItems: 'center', marginBottom: '24px' }}>
             
             <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-              Filtrar por
+              Período
             </label>
             <div>
-              <select 
-                className="input-premium" 
-                style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} 
-                value={form.filtro} 
-                onChange={e => handleChange('filtro', e.target.value)}
-              >
-                <option value="Período">Período</option>
-                <option value="Fechas">Fechas</option>
+              <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.periodo} onChange={e => handleChange('periodo', e.target.value)}>
+                <option value="Todos">Todos</option>
+                <option value="2026-01">2026-01</option>
+                <option value="2026-02">2026-02</option>
               </select>
             </div>
-
-            {form.filtro === 'Período' ? (
-              <>
-                <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                  Período
-                </label>
-                <div>
-                  <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.periodo} onChange={e => handleChange('periodo', e.target.value)}>
-                    <option value="Todos">Todos</option>
-                  </select>
-                </div>
-              </>
-            ) : (
-              <>
-                <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-                  Fechas
-                </label>
-                <div>
-                  <DateRangePicker 
-                    value={form.fechaRango} 
-                    onChange={(val) => handleChange('fechaRango', val)} 
-                  />
-                </div>
-              </>
-            )}
 
             <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
               Filtrar por
@@ -90,6 +61,7 @@ export default function CarteraPagosPage() {
             <div>
               <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.filtrarPor} onChange={e => handleChange('filtrarPor', e.target.value)}>
                 <option value="Programa">Programa</option>
+                <option value="Curso">Curso</option>
               </select>
             </div>
 
@@ -146,7 +118,6 @@ export default function CarteraPagosPage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 

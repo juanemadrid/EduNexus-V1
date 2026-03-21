@@ -8,20 +8,35 @@ export default function NotasCreditoPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [form, setForm] = useState({ 
     filtro: 'Fechas', 
-    fechas: 'Este mes',
+    periodo: '2026-01',
+    fechas: 'Hoy',
     cajeroId: 'Todos'
   });
+  const [touched, setTouched] = useState({ periodo: false, fechas: false });
 
   const handleCharge = () => {
+    setTouched({ periodo: true, fechas: true });
+    
+    const isPeriodValid = form.filtro === 'Período' ? !!form.periodo : true;
+    const isDateValid = form.filtro === 'Fechas' ? !!form.fechas : true;
+
+    if (!isPeriodValid || !isDateValid) return;
+
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      alert('Reporte de Notas crédito cargado exitosamente.');
+      alert('Reporte de Consolidado Notas Crédito cargado exitosamente.');
     }, 1500);
   };
 
   const handleChange = (field: string, value: string) => {
     setForm(p => ({ ...p, [field]: value }));
+  };
+
+  const isInvalid = (field: keyof typeof form) => {
+    if (field === 'periodo' && form.filtro !== 'Período') return false;
+    if (field === 'fechas' && form.filtro !== 'Fechas') return false;
+    return touched[field as keyof typeof touched] && !form[field as keyof typeof touched];
   };
 
   return (
@@ -49,19 +64,44 @@ export default function NotasCreditoPage() {
                 value={form.filtro} 
                 onChange={e => handleChange('filtro', e.target.value)}
               >
+                <option value="Período">Período</option>
                 <option value="Fechas">Fechas</option>
               </select>
             </div>
 
-            <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
-              Fechas
-            </label>
-            <div>
-              <DateRangePicker 
-                value={form.fechas} 
-                onChange={(val) => handleChange('fechas', val)} 
-              />
-            </div>
+            {form.filtro === 'Período' ? (
+              <>
+                <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
+                  Período <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div>
+                  <select 
+                    className="input-premium" 
+                    style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: isInvalid('periodo') ? '1px solid #ef4444' : '1px solid #e2e8f0' }} 
+                    value={form.periodo} 
+                    onChange={e => { setTouched(p => ({...p, periodo: true})); handleChange('periodo', e.target.value); }}
+                  >
+                    <option value="">Seleccione</option>
+                    <option value="2026-01">2026-01</option>
+                    <option value="2026-02">2026-02</option>
+                  </select>
+                  {isInvalid('periodo') && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
+                </div>
+              </>
+            ) : (
+              <>
+                <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
+                  Fechas <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div>
+                  <DateRangePicker 
+                    value={form.fechas} 
+                    onChange={(val) => { setTouched(p => ({...p, fechas: true})); handleChange('fechas', val); }} 
+                  />
+                  {isInvalid('fechas') && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>El campo es requerido</div>}
+                </div>
+              </>
+            )}
 
             <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>
               Cajero

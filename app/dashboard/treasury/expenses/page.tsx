@@ -1,6 +1,7 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Search, Plus, X as XIcon, Info, Download, ChevronDown } from 'lucide-react';
+import DateRangePicker from '@/components/DateRangePicker';
 import React, { useState } from 'react';
 
 export default function ExpensesPage() {
@@ -16,6 +17,7 @@ export default function ExpensesPage() {
   const [showAddThirdPartyModal, setShowAddThirdPartyModal] = useState(false);
   const [newThirdPartyName, setNewThirdPartyName] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('Todas');
   
   // Form State
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -98,12 +100,10 @@ export default function ExpensesPage() {
       </div>
 
       <div style={{ marginBottom: '16px', width: '300px' }}>
-        <select className="input-premium" style={{ width: '100%', height: '38px', fontSize: '13px', borderRadius: '4px', border: '1px solid #d1d5db', padding: '0 12px', appearance: 'none', background: 'white', color: '#374151' }}>
-          <option>Fechas: Todas</option>
-          <option>Hoy</option>
-          <option>Esta semana</option>
-          <option>Este mes</option>
-        </select>
+        <DateRangePicker 
+          value={dateFilter} 
+          onChange={(val: string) => setDateFilter(val)} 
+        />
       </div>
 
       <div className="glass-panel" style={{ overflow: 'hidden', background: 'white', border: '1px solid #e5e7eb', minHeight: '120px', borderRadius: '8px' }}>
