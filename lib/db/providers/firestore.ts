@@ -89,17 +89,17 @@ export class FirestoreProvider implements DBProvider {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
   }
 
-  async create(collectionName: string, data: any, id?: string, config?: FirebaseConfig): Promise<string> {
+  async create(collectionName: string, data: any, config?: FirebaseConfig): Promise<string> {
     const targetConfig = this.resolveConfig(config);
     const db = this.getDb(targetConfig);
     
-    if (id) {
-      const docRef = doc(db, collectionName, id);
+    if (data.id) {
+      const docRef = doc(db, collectionName, data.id);
       await setDoc(docRef, {
         ...data,
         createdAt: Date.now()
       });
-      return id;
+      return data.id;
     } else {
       const colRef = collection(db, collectionName);
       const docRef = await addDoc(colRef, {
