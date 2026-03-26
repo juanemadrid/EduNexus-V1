@@ -27,25 +27,28 @@ export const exportToCSV = (onSuccess?: (msg: string) => void, onError?: (msg: s
     s.isActive!==false?'Activo':'Inactivo'
   ]);
 
-  const csvContent = [headers,...rows].map(row=>row.map((cell:any)=>`"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
-  
   try {
-    const csvData = '\uFEFF' + csvContent;
-    const link = document.createElement('a');
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.download = `EduNexus_Respaldo_Completo.csv`;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 200);
-    onSuccess?.('✅ Base de datos exportada con éxito');
+    const XLSX = require('xlsx');
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws['!cols'] = [
+      { wch: 18 }, // ID
+      { wch: 35 }, // Nombres
+      { wch: 20 }, // Tipo
+      { wch: 15 }, // Telefono
+      { wch: 15 }, // Celular
+      { wch: 30 }, // Email
+      { wch: 25 }, // Ciudad
+      { wch: 25 }, // Barrio
+      { wch: 35 }, // Dirección
+      { wch: 15 }, // Estado
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Base de Datos");
+    XLSX.writeFile(wb, `EduNexus_Respaldo_Completo_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    onSuccess?.('✅ Base de datos exportada en formato Excel con éxito');
   } catch (e) {
-    onError?.('❌ Error al exportar.');
+    onError?.('❌ Error al exportar Excel.');
   }
 };
 

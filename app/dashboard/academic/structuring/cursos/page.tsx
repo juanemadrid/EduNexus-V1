@@ -2,9 +2,7 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, X, Edit, Trash2, Eye, ChevronLeft, ChevronRight, Search, Download, ChevronDown } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-
-const PERIODOS = ['2026 - 01', '2026 - 02', '2026 - 01', '2026 - 02'];
-
+const PERIODOS = ['2026 - 01', '2026 - 02'];
 export default function CursosPage() {
   const [cursos, setCursos] = useState<any[]>([]);
   const [sedes, setSedes] = useState<any[]>([]);
@@ -17,6 +15,8 @@ export default function CursosPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingCurso, setViewingCurso] = useState<any>(null);
   const itemsPerPage = 10;
 
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -58,7 +58,7 @@ export default function CursosPage() {
     const savedPrograms = localStorage.getItem('edunexus_academic_programs');
     if (savedPrograms) setPrograms(JSON.parse(savedPrograms));
 
-    const savedTeachers = localStorage.getItem('edunexus_teachers');
+    const savedTeachers = localStorage.getItem('edunexus_registered_teachers');
     if (savedTeachers) setTeachers(JSON.parse(savedTeachers));
   }, []);
 
@@ -107,7 +107,7 @@ export default function CursosPage() {
 
   const getTeacherName = (id: string) => {
     const t = teachers.find((t: any) => t.id === id);
-    return t ? `${t.nombres} ${t.apellidos}` : '—';
+    return t ? t.name || `${t.nombres} ${t.apellidos}` : '—';
   };
 
   const getProgramName = (id: string) => {
@@ -137,7 +137,7 @@ export default function CursosPage() {
       sedeJornadaLabel: getSelectedJornadaLabel(form.sedeJornada),
       programaNombre: programa?.nombre || '',
       asignaturaNombre: asignatura?.nombre || '',
-      docenteNombre: teacher ? `${teacher.nombres} ${teacher.apellidos}` : '',
+      docenteNombre: teacher ? teacher.name || `${teacher.nombres} ${teacher.apellidos}` : '',
       cuposOcupados: isEditing ? (cursos.find(c => c.id === editingId)?.cuposOcupados || 0) : 0
     };
 
@@ -295,7 +295,7 @@ export default function CursosPage() {
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '6px' }}>Docente</label>
                 <select className="input-premium" style={{ width: '100%', height: '40px', fontSize: '13px' }} value={filters.docenteId} onChange={e => { setFilters(f => ({ ...f, docenteId: e.target.value })); setCurrentPage(1); }}>
                   <option value="">Todos</option>
-                  {teachers.map(t => <option key={t.id} value={t.id}>{t.nombres} {t.apellidos}</option>)}
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.name || `${t.nombres} ${t.apellidos}`}</option>)}
                 </select>
               </div>
             </div>
@@ -349,7 +349,7 @@ export default function CursosPage() {
                   </td>
                   <td style={{ padding: '14px 24px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                      <button title="Ver" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><Eye size={16} /></button>
+                      <button title="Ver" onClick={() => { setViewingCurso(curso); setShowViewModal(true); }} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><Eye size={16} /></button>
                       <button title="Editar" onClick={() => handleEdit(curso)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}><Edit size={16} /></button>
                       <button title="Eliminar" onClick={() => handleDelete(curso.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}><Trash2 size={16} /></button>
                     </div>
@@ -408,7 +408,7 @@ export default function CursosPage() {
                 <select className="input-premium" value={form.docenteId} onChange={e => setForm(f => ({ ...f, docenteId: e.target.value }))}>
                   <option value="">Seleccione Docente</option>
                   {teachers.map((t: any) => (
-                    <option key={t.id} value={t.id}>{t.nombres} {t.apellidos}</option>
+                    <option key={t.id} value={t.id}>{t.name || `${t.nombres} ${t.apellidos}`}</option>
                   ))}
                 </select>
               </div>
@@ -427,14 +427,14 @@ export default function CursosPage() {
               {/* Programa */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Programa *</label>
-                <select className="input-premium" value={form.programaId} onChange={e => handleProgramChange(e.target.value)} disabled={filteredPrograms.length === 0}>
+                <select className="input-premium" value={form.programaId} onChange={e => handleProgramChange(e.target.value)} disabled={programs.length === 0}>
                   <option value="">Seleccione</option>
-                  {filteredPrograms.map((p: any) => (
+                  {programs.map((p: any) => (
                     <option key={p.id} value={p.id}>{p.nombre || p.codigo}</option>
                   ))}
                 </select>
-                {filteredPrograms.length === 0 && form.sedeJornada && (
-                  <p style={{ fontSize: '11px', color: '#f59e0b', margin: '4px 0 0', fontWeight: '600' }}>⚠ Esta jornada no tiene programas asignados aún</p>
+                {programs.length === 0 && (
+                  <p style={{ fontSize: '11px', color: '#f59e0b', margin: '4px 0 0', fontWeight: '600' }}>⚠ No hay programas creados</p>
                 )}
               </div>
 
@@ -453,7 +453,7 @@ export default function CursosPage() {
                 <select className="input-premium" value={form.asignaturaId} onChange={e => setForm(f => ({ ...f, asignaturaId: e.target.value }))} disabled={filteredPensumSubjects.length === 0}>
                   <option value="">Seleccione</option>
                   {filteredPensumSubjects.map((s: any) => (
-                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                    <option key={s.id || s.subjectId || Math.random()} value={s.id || s.subjectId}>{s.nombre}</option>
                   ))}
                 </select>
               </div>
@@ -507,6 +507,70 @@ export default function CursosPage() {
                 <button onClick={() => setShowDeleteModal(false)} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '700', cursor: 'pointer' }}>Cancelar</button>
                 <button onClick={confirmDelete} style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#dc2626', color: 'white', fontWeight: '800', cursor: 'pointer' }}>Eliminar</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VISTA PREVIA DEL CURSO MODAL */}
+      {showViewModal && viewingCurso && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="animate-fade" style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '600px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)' }}>
+            <div style={{ background: 'var(--primary)', padding: '20px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, color: 'white', fontSize: '18px', fontWeight: '800' }}>Detalles del Curso</h2>
+              <button onClick={() => { setShowViewModal(false); setViewingCurso(null); }} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}><X size={20} /></button>
+            </div>
+            <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Código</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.codigo}</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Nombre</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.nombre}</p>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Docente a cargo</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.docenteNombre || 'Sin asignar'}</p>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Programa Institucional</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.programaNombre}</p>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Asignatura / Materia</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.asignaturaNombre}</p>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Sede - Jornada</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.sedeJornadaLabel}</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Período Académico</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.periodo}</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Ocupación / Cupos</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.cuposOcupados || 0} de {viewingCurso.cupoMaximo} max.</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Fecha de Inicio</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.fechaInicio}</p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: '11px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Fecha de Fin</p>
+                  <p style={{ margin: '4px 0 0', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{viewingCurso.fechaFin}</p>
+                </div>
+              </div>
+            </div>
+            <div style={{ padding: '20px 32px', borderTop: '1px solid #f1f5f9', background: '#f9fafb', display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => { setShowViewModal(false); setViewingCurso(null); }} 
+                style={{ padding: '10px 24px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', cursor: 'pointer' }}
+              >
+                Cerrar
+              </button>
             </div>
           </div>
         </div>

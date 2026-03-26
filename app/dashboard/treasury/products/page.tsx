@@ -19,11 +19,21 @@ const MOCK_PRODUCTS = [
 ];
 
 export default function ProductsPage() {
-  const [productsList, setProductsList] = useState(MOCK_PRODUCTS);
+  const [productsList, setProductsList] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem('edunexus_productos');
+    if (saved) {
+      setProductsList(JSON.parse(saved));
+    } else {
+      setProductsList(MOCK_PRODUCTS);
+      localStorage.setItem('edunexus_productos', JSON.stringify(MOCK_PRODUCTS));
+    }
+  }, []);
 
   // Búsqueda Avanzada
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -50,11 +60,34 @@ export default function ProductsPage() {
 
   const handleDelete = (id: string) => {
     if (window.confirm("¿Está seguro que desea eliminar este producto?")) {
-      setProductsList(prev => prev.filter(p => p.id !== id));
+      const updated = productsList.filter(p => p.id !== id);
+      setProductsList(updated);
+      localStorage.setItem('edunexus_productos', JSON.stringify(updated));
       if (selectedProduct?.id === id) {
         setSelectedProduct(null);
       }
     }
+  };
+
+  const handleSaveProduct = () => {
+    if (!form.name || !form.price) {
+      alert("Completar campos requeridos");
+      return;
+    }
+
+    let updated = [...productsList];
+    if (modalMode === 'create') {
+      const newProduct = { ...form, id: form.id || Math.floor(Math.random() * 99999).toString(), price: parseFloat(form.price) || 0 };
+      updated = [newProduct, ...updated];
+    } else {
+      updated = updated.map(p => p.id === form.id ? { ...form, price: parseFloat(form.price) || 0 } : p);
+      if (selectedProduct && selectedProduct.id === form.id) {
+        setSelectedProduct({ ...form, price: parseFloat(form.price) || 0 });
+      }
+    }
+    setProductsList(updated);
+    localStorage.setItem('edunexus_productos', JSON.stringify(updated));
+    setShowModal(false);
   };
 
   const openCreateModal = () => {
@@ -466,7 +499,7 @@ export default function ProductsPage() {
                 Cancelar
               </button>
               <button 
-                onClick={() => setShowModal(false)}
+                onClick={handleSaveProduct}
                 style={{ padding: '6px 16px', borderRadius: '4px', border: 'none', background: '#5bba6f', color: 'white', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
               >
                 Aceptar

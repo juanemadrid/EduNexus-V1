@@ -34,7 +34,7 @@ export default function GruposPage() {
     const savedCursos = localStorage.getItem('edunexus_cursos');
     if (savedCursos) setCursos(JSON.parse(savedCursos));
 
-    const savedStudents = localStorage.getItem('edunexus_students');
+    const savedStudents = localStorage.getItem('edunexus_registered_students');
     if (savedStudents) setStudents(JSON.parse(savedStudents));
   }, []);
 
@@ -243,8 +243,8 @@ export default function GruposPage() {
                 return (
                   <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: '12px', marginBottom: '6px', background: enrolled ? 'rgba(16,185,129,0.05)' : '#f8fafc', border: `1px solid ${enrolled ? 'rgba(16,185,129,0.2)' : '#f1f5f9'}` }}>
                     <div>
-                      <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{s.nombres} {s.apellidos}</p>
-                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>{s.documento}</p>
+                      <p style={{ margin: 0, fontSize: '13px', fontWeight: '700', color: '#1e293b' }}>{s.name || `${s.nombres} ${s.apellidos}`}</p>
+                      <p style={{ margin: 0, fontSize: '11px', color: '#64748b' }}>{s.id || s.documento}</p>
                     </div>
                     <button
                       onClick={() => {

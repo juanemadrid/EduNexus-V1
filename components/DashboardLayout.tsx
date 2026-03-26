@@ -18,13 +18,15 @@ import {
   Target,
   Building,
   ShieldCheck,
+  GraduationCap,
   FileDown,
   Upload,
   Database,
   FileText,
   MonitorPlay,
   DollarSign,
-  TrendingDown
+  TrendingDown,
+  UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exportToCSV, importFromCSV } from '@/lib/dataUtils';
@@ -39,53 +41,67 @@ interface NavItem {
 const navigation: Record<string, NavItem[]> = {
   'Institucional': [
     { name: 'Estudiantes', icon: <Users size={18} />, subItems: [
-      { name: 'Registrar Estudiante', href: '/dashboard/institutional/students/register' },
-      { name: 'Información básica', href: '/dashboard/institutional/students/basic-info' },
-      { name: 'Preinscripciones', href: '/dashboard/institutional/students/pre-enrollment' },
-      { name: 'Inscritos no matriculados', href: '/dashboard/institutional/students/not-enrolled' },
-      { name: 'Cancelación masiva', href: '/dashboard/institutional/students/mass-cancellation' },
-      { name: 'Establecer egresados', href: '/dashboard/institutional/students/graduates' }
+      { name: 'Registrar Estudiante', href: '/dashboard/students/register' },
+      { name: 'Información básica', href: '/dashboard/students/basic-info' },
+      { name: 'Preinscripciones', href: '/dashboard/students/pre-enrollment' },
+      { name: 'Inscritos no matriculados', href: '/dashboard/students/not-enrolled' },
+      { name: 'Cancelación masiva', href: '/dashboard/students/mass-cancellation' },
+      { name: 'Establecer egresados', href: '/dashboard/students/graduates' }
     ]},
     { name: 'Docentes', icon: <User size={18} />, subItems: [
-      { name: 'Registrar Docente', href: '/dashboard/institutional/teachers/register' },
-      { name: 'Información básica', href: '/dashboard/institutional/teachers/basic-info' }
+      { name: 'Registrar Docente', href: '/dashboard/teachers/register' },
+      { name: 'Información básica', href: '/dashboard/teachers/basic-info' }
     ]},
     { name: 'Administrativos', icon: <ShieldCheck size={18} />, subItems: [
-      { name: 'Registrar Administrativo', href: '/dashboard/institutional/admins/register' },
-      { name: 'Información básica', href: '/dashboard/institutional/admins/basic-info' }
+      { name: 'Registrar Administrativo', href: '/dashboard/admins/register' },
+      { name: 'Información básica', href: '/dashboard/admins/basic-info' }
     ]},
     { name: 'Familiares', icon: <Users size={18} />, subItems: [
-      { name: 'Registrar familiar', href: '/dashboard/institutional/family/register' },
-      { name: 'Información básica', href: '/dashboard/institutional/family/basic-info' }
+      { name: 'Registrar familiar', href: '/dashboard/family/register' },
+      { name: 'Información básica', href: '/dashboard/family/basic-info' }
     ]},
     { name: 'Participantes', icon: <Users size={18} />, subItems: [
-      { name: 'Información básica', href: '/dashboard/institutional/participants/basic-info' }
+      { name: 'Información básica', href: '/dashboard/participants/basic-info' }
     ]},
     { name: 'Comercial CRM', icon: <Target size={18} />, subItems: [
-      { name: 'Oportunidades', href: '/dashboard/institutional/commercial/opportunities' },
-      { name: 'Medios publicitarios', href: '/dashboard/institutional/commercial/advertising-media' },
-      { name: 'Medios de contactos', href: '/dashboard/institutional/commercial/contact-media' },
-      { name: 'Estados de negocio', href: '/dashboard/institutional/commercial/business-status' },
-      { name: 'Campos personalizados', href: '/dashboard/institutional/commercial/custom-fields' },
-      { name: 'Causas', href: '/dashboard/institutional/commercial/causes' },
-      { name: 'Importar oportunidades', href: '/dashboard/institutional/commercial/import-opportunities' },
-      { name: 'Cambio masivo de asesor', href: '/dashboard/institutional/commercial/mass-advisor-change' }
+      { name: 'Oportunidades', href: '/dashboard/commercial/opportunities' },
+      { name: 'Medios publicitarios', href: '/dashboard/commercial/advertising-media' },
+      { name: 'Medios de contactos', href: '/dashboard/commercial/contact-media' },
+      { name: 'Estados de negocio', href: '/dashboard/commercial/business-status' },
+      { name: 'Campos personalizados', href: '/dashboard/commercial/custom-fields' },
+      { name: 'Causas', href: '/dashboard/commercial/causes' },
+      { name: 'Importar oportunidades', href: '/dashboard/commercial/import-opportunities' },
+      { name: 'Cambio masivo de asesor', href: '/dashboard/commercial/mass-advisor-change' }
     ]},
     { name: 'Establecimiento', icon: <Building size={18} />, subItems: [
-      { name: 'Información general', href: '/dashboard/institutional/establishment/general-info' }
+      { name: 'Información general', href: '/dashboard/establishment/general-info' }
     ]},
     { name: 'Admisiones', icon: <BookOpen size={18} />, subItems: [
-      { name: 'Panel de admisiones', href: '/dashboard/institutional/admissions/panel' }
+      { name: 'Panel de admisiones', href: '/dashboard/admissions/panel' }
     ]},
-    { name: 'Pedidos Q10 ID (Carnetización)', icon: <CreditCard size={18} />, subItems: [
-      { name: 'Solicitudes', href: '/dashboard/institutional/id-cards/requests' }
+    { name: 'Centro de Recepción', icon: <ShieldCheck size={18} />, subItems: [
+      { name: 'Recepción y Novedades', href: '/dashboard/reception' }
+    ]},
+    { name: 'Gestión de Carnetización', icon: <CreditCard size={18} />, subItems: [
+      { name: 'Generar Carnets', href: '/dashboard/id-cards/requests' }
     ]},
     { name: 'Estructuración', icon: <Database size={18} />, subItems: [
-      { name: 'Configuración', href: '/dashboard/institutional/structuring/configuration' }
+      { name: 'Sedes - jornadas', href: '/dashboard/structuring/branches' },
+      { name: 'Niveles', href: '/dashboard/structuring/levels' },
+      { name: 'Aulas', href: '/dashboard/structuring/classrooms' },
+      { name: 'Periodos', href: '/dashboard/structuring/periods' },
+      { name: 'Perfiles', href: '/dashboard/structuring/profiles' },
+      { name: 'Empresas', href: '/dashboard/structuring/companies' },
+      { name: 'Instituciones educativas', href: '/dashboard/structuring/educational-institutions' },
+      { name: 'Preguntas personalizadas', href: '/dashboard/structuring/custom-questions' },
+      { name: 'Categorías documentos digitales', href: '/dashboard/structuring/digital-categories' },
+      { name: 'Entidades administradoras', href: '/dashboard/structuring/admin-entities' },
+      { name: 'Parametrización de informes', href: '/dashboard/structuring/reports-configuration' }
     ]}
   ],
   'Académico': [
     { name: 'Evaluaciones', icon: <FileText size={18} />, href: '/dashboard/academic/evaluations' },
+    { name: 'Observador', icon: <UserCheck size={18} />, href: '/dashboard/academic/observer' },
     { name: 'Educación virtual', icon: <MonitorPlay size={18} />, subItems: [
       { name: 'Aulas virtuales', href: '/dashboard/academic/virtual-classrooms' }
     ]},
@@ -154,6 +170,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     return { logo: '', primaryColor: '#10b981', subdomain: '' };
   });
+  
+  const [userProfile, setUserProfile] = useState({ name: 'Jader Antonio', role: 'ADMIN', roleLabel: 'RECTORÍA MASTER' });
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
@@ -167,6 +185,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     root.style.setProperty('--primary-glow', `rgba(${r}, ${g}, ${b}, 0.15)`);
+
+    const savedUser = localStorage.getItem('edunexus_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        setUserProfile({
+          name: u.name,
+          role: u.role,
+          roleLabel: u.role === 'RECEPTIONIST' ? 'RECEPCIÓN Y ACCESO' : 'RECTORÍA MASTER'
+        });
+      } catch(e) {}
+    }
   }, [institutionalConfig.primaryColor]);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
@@ -182,17 +212,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     
     const query = val.toLowerCase();
-    const studentsSaved = localStorage.getItem('edunexus_registered_students');
-    const localStudents = studentsSaved ? JSON.parse(studentsSaved) : [];
-    const students = localStudents
-      .filter((s: any) => s.name.toLowerCase().includes(query) || s.id.includes(query))
-      .map((s: any) => ({ 
-        id: s.id, 
-        name: s.name, 
-        type: 'Estudiante', 
-        icon: <Users size={14} />,
-        href: `/dashboard/institutional/students/basic-info`
-      }));
+    
+    // Helper to get from local storage safely
+    const getLocal = (key: string) => {
+      if (typeof window === 'undefined') return [];
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : [];
+    };
+
+    const students = getLocal('edunexus_registered_students').filter((s: any) => 
+      s.name.toLowerCase().includes(query) || s.id.includes(query)
+    ).map((s: any) => ({ 
+      id: s.id, name: s.name, type: 'Estudiante', icon: <Users size={14} />, href: `/dashboard/students/basic-info` 
+    }));
+
+    const admins = getLocal('edunexus_registered_admins').filter((a: any) => 
+      a.name.toLowerCase().includes(query) || a.id.includes(query)
+    ).map((a: any) => ({ 
+      id: a.id, name: a.name, type: 'Administrativo', icon: <ShieldCheck size={14} />, href: `/dashboard/admins/basic-info` 
+    }));
+
+    const teachers = getLocal('edunexus_registered_teachers').filter((t: any) => 
+      t.name.toLowerCase().includes(query) || t.id.includes(query)
+    ).map((t: any) => ({ 
+      id: t.id, name: t.name, type: 'Docente', icon: <GraduationCap size={14} />, href: `/dashboard/teachers/basic-info` 
+    }));
+
+    const families = getLocal('edunexus_registered_family').filter((f: any) => 
+      f.name.toLowerCase().includes(query) || f.id.includes(query)
+    ).map((f: any) => ({ 
+      id: f.id, name: f.name, type: 'Familiar', icon: <Users size={14} />, href: `/dashboard/family/basic-info` 
+    }));
 
     const processes: any[] = [];
     Object.entries(navigation).forEach(([category, items]) => {
@@ -208,7 +258,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       });
     });
 
-    setSearchResults([...students, ...processes]);
+    setSearchResults([...students, ...admins, ...teachers, ...families, ...processes]);
   };
 
   const handleMouseEnter = (category: string) => {
@@ -254,7 +304,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             // In a real env, we'd store the file chunk or parse it into a temp state
             showToast('Archivo cargado. Validando integridad...', 'success');
             setTimeout(() => {
-              router.push('/dashboard/institutional/import-validation?type=students');
+              router.push('/dashboard/import-validation?type=students');
             }, 1000);
           }
         }}
@@ -327,7 +377,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         <nav style={{ display: 'flex', gap: '8px', flex: 2, justifyContent: 'center' }}>
-          {Object.entries(navigation).map(([category, items]) => {
+          {Object.entries(navigation).reduce((acc, [category, items]) => {
+            if (userProfile.role === 'RECEPTIONIST') {
+              if (category === 'Institucional') {
+                const allowedItems = items.filter(item => item.name === 'Centro de Recepción');
+                if (allowedItems.length > 0) acc.push([category, allowedItems] as [string, NavItem[]]);
+              }
+            } else {
+              acc.push([category, items] as [string, NavItem[]]);
+            }
+            return acc;
+          }, [] as [string, NavItem[]][]).map(([category, items]) => {
             if (category === 'Informes') {
               return (
                 <Link key={category} href="/dashboard/reports" style={{ textDecoration: 'none' }}>
@@ -353,8 +413,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
                 {activeMenu === category && (
                   <div style={{ position: 'absolute', top: '100%', left: '0', minWidth: '240px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px', marginTop: '5px', zIndex: 1000 }}>
-                    {items.map((item) => (
-                      <div key={item.name} style={{ position: 'relative' }} onMouseEnter={() => setActiveSubMenu(item.name)}>
+                    {items.map((item, index) => (
+                      <div key={item.name} onMouseEnter={() => setActiveSubMenu(item.name)}>
                         <Link href={item.href || '#'} style={{ 
                           padding: '12px 14px', borderRadius: '12px', fontSize: '13.5px', fontWeight: '600', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           background: (activeSubMenu === item.name || pathname === item.href) ? 'var(--primary-glow)' : 'transparent',
@@ -363,7 +423,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           {item.name} {item.subItems && <ChevronRight size={14} />}
                         </Link>
                         {item.subItems && activeSubMenu === item.name && (
-                          <div style={{ position: 'absolute', top: '-12px', left: '100%', minWidth: '220px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px' }}>
+                          <div style={{ 
+                            position: 'absolute', 
+                            top: '0', 
+                            bottom: 'auto',
+                            left: '100%', 
+                            marginLeft: '5px',
+                            minWidth: '220px', 
+                            maxHeight: 'calc(100vh - 120px)',
+                            overflowY: 'auto',
+                            background: 'white', 
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', 
+                            borderRadius: '18px', 
+                            border: '1px solid var(--glass-border)', 
+                            padding: '12px',
+                            zIndex: 3000
+                          }} className="custom-scrollbar">
                             {item.subItems.map((sub) => (
                               <Link key={sub.name} href={sub.href} style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: pathname === sub.href ? 'var(--primary)' : 'var(--text-dim)', textDecoration: 'none', display: 'block', background: pathname === sub.href ? 'var(--primary-glow)' : 'transparent' }}>
                                 {sub.name}
@@ -398,9 +473,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '6px 14px', background: 'white', borderRadius: '50px', border: '1px solid var(--glass-border)', cursor: 'pointer', position: 'relative' }} onClick={() => setShowUserMenu(!showUserMenu)}>
              <div style={{ textAlign: 'right' }}>
                <p style={{ fontSize: '13px', fontWeight: '800', margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                 Jader Antonio <ChevronDown size={14} style={{ transform: showUserMenu ? 'rotate(180deg)' : 'none' }} />
+                 {userProfile.name} <ChevronDown size={14} style={{ transform: showUserMenu ? 'rotate(180deg)' : 'none' }} />
                </p>
-               <p style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: '800', margin: 0 }}>RECTORÍA MASTER</p>
+               <p style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: '800', margin: 0 }}>{userProfile.roleLabel}</p>
              </div>
              <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', borderRadius: '12px' }}></div>
              {showUserMenu && (
@@ -497,6 +572,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .input-premium { width: 100%; height: 48px; border-radius: 14px; border: 1px solid #e2e8f0; padding: 0 16px; outline: none; transition: 0.2s; font-size: 14px; font-weight: 600; }
         .input-premium:focus { border-color: var(--primary); background: white; }
         .toast-animate { animation: slideUp 0.3s ease-out; }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(0,0,0,0.05);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(0,0,0,0.1);
+        }
       `}</style>
     </div>
   );

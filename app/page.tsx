@@ -1,18 +1,66 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
+import { defaultFirebaseConfig } from '@/lib/db/defaultConfig';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simular inicio de sesión exitoso
-    setTimeout(() => {
-      window.location.href = '/dashboard';
-    }, 1500);
+
+    try {
+      // 1. Super Admin Detection
+      if (email.toLowerCase() === 'admin@edunexus.co' && password === 'admin123') {
+        localStorage.setItem('edunexus_user', JSON.stringify({ 
+          email, 
+          role: 'SUPER_ADMIN', 
+          name: 'Administrador Maestro' 
+        }));
+        window.location.href = '/super-admin';
+        return;
+      }
+
+      // 2. Institutional Lookup in Master DB
+      // For this elite version, we find the institution based on email domain or a match
+      const domain = email.split('@')[1]?.split('.')[0];
+      const tenants = await db.list<any>('tenants');
+      
+      const institutionalMatch = tenants.find(t => 
+        t.slug === domain || 
+        t.name.toLowerCase().includes(domain || '')
+      );
+
+      if (!institutionalMatch) {
+        alert("Institución no encontrada o dominio no registrado.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Store institutional context
+      const role = email.toLowerCase().includes('recepcion') ? 'RECEPTIONIST' : 'ADMIN';
+      const name = role === 'RECEPTIONIST' ? 'Recepcionista' : institutionalMatch.name;
+      
+      localStorage.setItem('edunexus_user', JSON.stringify({ 
+        email, 
+        role, 
+        name,
+        tenantId: institutionalMatch.id,
+        tenantName: institutionalMatch.name
+      }));
+      
+      // CRITICAL: Store the institutional Firebase config
+      sessionStorage.setItem('edunexus_tenant_config', JSON.stringify(institutionalMatch.firebaseConfig));
+
+      window.location.href = role === 'RECEPTIONIST' ? '/dashboard/reception' : '/dashboard';
+    } catch (error) {
+      console.error("Login Error:", error);
+      alert("Error al conectar con la base de datos.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,7 +75,7 @@ export default function LoginPage() {
             <input 
               type="email" 
               className="input-premium" 
-              placeholder="admin@edunexus.com"
+              placeholder="recepcion@edunexus.com o admin@..."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
