@@ -108,12 +108,13 @@ export default function InstitutionsManagement() {
   };
 
   const handleRemoteLogin = (inst: any) => {
-    // 1. Store Institutional Config
-    sessionStorage.setItem('edunexus_tenant_config', JSON.stringify(inst.firebaseConfig));
+    // 1. Store Institutional Config Safely (Use Master if RENTAL with empty config)
+    const configToStore = inst.type === 'RENTAL' ? defaultFirebaseConfig : inst.firebaseConfig;
+    sessionStorage.setItem('edunexus_tenant_config', JSON.stringify(configToStore));
     
     // 2. Store Fake Admin User
     localStorage.setItem('edunexus_user', JSON.stringify({ 
-      email: `admin@${inst.slug}.com`, 
+      email: inst.adminEmail || `admin@${inst.slug}.com`, 
       role: 'ADMIN', 
       name: `Admin - ${inst.name}`,
       tenantId: inst.id,

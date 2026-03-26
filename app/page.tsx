@@ -25,14 +25,14 @@ export default function LoginPage() {
       }
 
       // 2. Institutional Lookup in Master DB
-      // For this elite version, we find the institution based on email domain or a match
+      // We must ALWAYS query the Master DB for logins, ignoring any poisoned sessionStorage
       const domain = email.split('@')[1]?.split('.')[0];
-      const tenants = await db.list<any>('tenants');
+      const tenants = await db.list<any>('tenants', null, defaultFirebaseConfig);
       
       const institutionalMatch = tenants.find(t => 
         t.adminEmail === email ||
         t.slug === domain || 
-        t.name.toLowerCase().includes(domain || '')
+        (t.name || '').toLowerCase().includes(domain || '')
       );
 
       if (!institutionalMatch) {
