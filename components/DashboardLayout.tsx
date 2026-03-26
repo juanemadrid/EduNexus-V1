@@ -318,8 +318,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         borderTop: '5px solid var(--primary)',
         padding: '0 40px',
         display: 'flex',
-        position: 'relative',
-        zIndex: 50,
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'sticky',
@@ -415,8 +413,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
                 {activeMenu === category && (
                   <div style={{ position: 'absolute', top: '100%', left: '0', minWidth: '240px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px', marginTop: '5px', zIndex: 9999 }}>
-                    {items.map((item, index) => (
-                      <div key={item.name} onMouseEnter={() => setActiveSubMenu(item.name)} style={{ position: 'relative' }}>
+                    {items.map((item, index) => {
+                      const isLargeMenu = item.subItems && item.subItems.length > 6;
+                      
+                      return (
+                      <div key={item.name} onMouseEnter={() => setActiveSubMenu(item.name)} style={{ position: isLargeMenu ? 'static' : 'relative' }}>
                         <Link href={item.href || '#'} style={{ 
                           padding: '12px 14px', borderRadius: '12px', fontSize: '13.5px', fontWeight: '600', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           background: (activeSubMenu === item.name || pathname === item.href) ? 'var(--primary-glow)' : 'transparent',
@@ -427,8 +428,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         {item.subItems && activeSubMenu === item.name && (
                           <div style={{ 
                             position: 'absolute', 
-                            top: index > items.length / 2 ? 'auto' : '-10px', 
-                            bottom: index > items.length / 2 ? '-10px' : 'auto',
+                            top: isLargeMenu ? '0' : '-10px', 
+                            bottom: 'auto',
                             left: '100%', 
                             paddingLeft: '8px', /* Invisible hover bridge to prevent disappearing menus */
                             zIndex: 10000
@@ -452,7 +453,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           </div>
                         )}
                       </div>
-                    ))}
+                    )})}
                   </div>
                 )}
               </div>
