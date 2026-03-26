@@ -318,6 +318,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         borderTop: '5px solid var(--primary)',
         padding: '0 40px',
         display: 'flex',
+        position: 'relative',
+        zIndex: 50,
         alignItems: 'center',
         justifyContent: 'space-between',
         position: 'sticky',
@@ -412,9 +414,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {category} <ChevronDown size={14} style={{ opacity: 0.5 }} />
                 </button>
                 {activeMenu === category && (
-                  <div style={{ position: 'absolute', top: '100%', left: '0', minWidth: '240px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px', marginTop: '5px', zIndex: 1000 }}>
+                  <div style={{ position: 'absolute', top: '100%', left: '0', minWidth: '240px', background: 'white', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', borderRadius: '18px', border: '1px solid var(--glass-border)', padding: '12px', marginTop: '5px', zIndex: 9999 }}>
                     {items.map((item, index) => (
-                      <div key={item.name} onMouseEnter={() => setActiveSubMenu(item.name)}>
+                      <div key={item.name} onMouseEnter={() => setActiveSubMenu(item.name)} style={{ position: 'relative' }}>
                         <Link href={item.href || '#'} style={{ 
                           padding: '12px 14px', borderRadius: '12px', fontSize: '13.5px', fontWeight: '600', textDecoration: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           background: (activeSubMenu === item.name || pathname === item.href) ? 'var(--primary-glow)' : 'transparent',
@@ -426,18 +428,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <div style={{ 
                             position: 'absolute', 
                             top: '0', 
-                            bottom: 'auto',
-                            left: '100%', 
-                            marginLeft: '5px',
-                            minWidth: '220px', 
+                            left: 'calc(100% + 12px)', 
+                            minWidth: '240px', 
                             maxHeight: 'calc(100vh - 120px)',
                             overflowY: 'auto',
                             background: 'white', 
-                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)', 
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.2)', 
                             borderRadius: '18px', 
                             border: '1px solid var(--glass-border)', 
                             padding: '12px',
-                            zIndex: 3000
+                            zIndex: 10000
                           }} className="custom-scrollbar">
                             {item.subItems.map((sub) => (
                               <Link key={sub.name} href={sub.href} style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: pathname === sub.href ? 'var(--primary)' : 'var(--text-dim)', textDecoration: 'none', display: 'block', background: pathname === sub.href ? 'var(--primary-glow)' : 'transparent' }}>
