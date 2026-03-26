@@ -427,23 +427,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         {item.subItems && activeSubMenu === item.name && (
                           <div style={{ 
                             position: 'absolute', 
-                            top: '0', 
-                            left: 'calc(100% + 12px)', 
-                            minWidth: '240px', 
-                            maxHeight: 'calc(100vh - 120px)',
-                            overflowY: 'auto',
-                            background: 'white', 
-                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.2)', 
-                            borderRadius: '18px', 
-                            border: '1px solid var(--glass-border)', 
-                            padding: '12px',
+                            top: index > items.length / 2 ? 'auto' : '-10px', 
+                            bottom: index > items.length / 2 ? '-10px' : 'auto',
+                            left: '100%', 
+                            paddingLeft: '8px', /* Invisible hover bridge to prevent disappearing menus */
                             zIndex: 10000
-                          }} className="custom-scrollbar">
-                            {item.subItems.map((sub) => (
-                              <Link key={sub.name} href={sub.href} style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: pathname === sub.href ? 'var(--primary)' : 'var(--text-dim)', textDecoration: 'none', display: 'block', background: pathname === sub.href ? 'var(--primary-glow)' : 'transparent' }}>
-                                {sub.name}
-                              </Link>
-                            ))}
+                          }}>
+                            <div style={{
+                              minWidth: '240px', 
+                              maxHeight: 'calc(100vh - 120px)',
+                              overflowY: 'auto',
+                              background: 'white', 
+                              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.2)', 
+                              borderRadius: '18px', 
+                              border: '1px solid var(--glass-border)', 
+                              padding: '12px',
+                            }} className="custom-scrollbar">
+                              {item.subItems.map((sub) => (
+                                <Link key={sub.name} href={sub.href} style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: pathname === sub.href ? 'var(--primary)' : 'var(--text-dim)', textDecoration: 'none', display: 'block', background: pathname === sub.href ? 'var(--primary-glow)' : 'transparent' }}>
+                                  {sub.name}
+                                </Link>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
