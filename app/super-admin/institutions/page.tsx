@@ -31,6 +31,13 @@ export default function InstitutionsManagement() {
     slug: '',
     type: 'RENTAL',
     status: 'ACTIVE',
+    adminEmail: '',
+    adminPassword: '',
+    subscription: {
+      monthlyValue: '',
+      months: 1,
+      discount: 0
+    },
     firebaseConfig: {
       apiKey: '',
       authDomain: '',
@@ -69,9 +76,9 @@ export default function InstitutionsManagement() {
           usersCount: 1 
         });
 
-        // 2. Auto-generate initial Admin credentials for this Tenant
-        const adminEmail = `admin@${formData.slug}.com`;
-        const adminPassword = 'admin'; // Contraseña inicial fija: "admin"
+        // 2. Auto-generate or use provided Admin credentials
+        const adminEmail = formData.adminEmail || `admin@${formData.slug}.com`;
+        const adminPassword = formData.adminPassword || 'admin'; // Provided by SA
         
         // 3. Save the Admin in the TENANT'S database
         const tenantConfig = formData.type === 'RENTAL' ? defaultFirebaseConfig : formData.firebaseConfig;
@@ -124,6 +131,13 @@ export default function InstitutionsManagement() {
       slug: '',
       type: 'RENTAL',
       status: 'ACTIVE',
+      adminEmail: '',
+      adminPassword: '',
+      subscription: {
+        monthlyValue: '',
+        months: 1,
+        discount: 0
+      },
       firebaseConfig: {
         apiKey: '', authDomain: '', projectId: '', storageBucket: '', messagingSenderId: '', appId: ''
       }
@@ -276,11 +290,61 @@ export default function InstitutionsManagement() {
                      </div>
                   </div>
 
+                  {/* Access Credentials Section */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '30px', background: '#f0fdf4', borderRadius: '24px', border: '1px solid #bbf7d0' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <ShieldCheck size={20} color="#16a34a" />
+                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#166534' }}>CREDENCIALES DE ACCESO</h5>
+                     </div>
+                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: '#166534', marginBottom: '8px' }}>CORREO ADMINISTRATIVO</label>
+                          <input type="email" required className="input-premium" value={formData.adminEmail} onChange={e => setFormData({...formData, adminEmail: e.target.value})} placeholder="Ej: rector@colegio.edu.co" style={{ background: 'white', borderColor: '#bbf7d0' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: '#166534', marginBottom: '8px' }}>CONTRASEÑA INICIAL</label>
+                          <input type="text" required className="input-premium" value={formData.adminPassword} onChange={e => setFormData({...formData, adminPassword: e.target.value})} placeholder="Ej: admin123" style={{ background: 'white', borderColor: '#bbf7d0' }} />
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Subscription Section */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '30px', background: '#fdf4ff', borderRadius: '24px', border: '1px solid #fbcfe8' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <CreditCard size={20} color="#d946ef" />
+                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#86198f' }}>TARIFA DE LA SUSCRIPCIÓN</h5>
+                     </div>
+                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: '#86198f', marginBottom: '8px' }}>MENSUALIDAD (BASE)</label>
+                          <input type="number" className="input-premium" value={formData.subscription.monthlyValue} onChange={e => setFormData({...formData, subscription: {...formData.subscription, monthlyValue: e.target.value}})} placeholder="Ej: 150000" style={{ background: 'white', borderColor: '#fbcfe8' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: '#86198f', marginBottom: '8px' }}>MESES A PAGAR</label>
+                          <input type="number" min="1" className="input-premium" value={formData.subscription.months} onChange={e => setFormData({...formData, subscription: {...formData.subscription, months: parseInt(e.target.value) || 1}})} style={{ background: 'white', borderColor: '#fbcfe8' }} />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: '800', color: '#86198f', marginBottom: '8px' }}>DESCUENTO APLICADO (%)</label>
+                          <input type="number" min="0" max="100" className="input-premium" value={formData.subscription.discount} onChange={e => setFormData({...formData, subscription: {...formData.subscription, discount: parseFloat(e.target.value) || 0}})} placeholder="Ej: 10" style={{ background: 'white', borderColor: '#fbcfe8' }} />
+                        </div>
+                     </div>
+                     <div style={{ padding: '16px', background: 'white', borderRadius: '12px', border: '1px solid #fbcfe8', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '700', color: '#a21caf' }}>Resumen del Pago (Total a facturar):</span>
+                        <span style={{ fontSize: '18px', fontWeight: '900', color: '#86198f' }}>
+                          ${(
+                            (parseFloat(formData.subscription.monthlyValue as string) || 0) * 
+                            formData.subscription.months * 
+                            (1 - formData.subscription.discount / 100)
+                          ).toLocaleString('es-CO')}
+                        </span>
+                     </div>
+                  </div>
+
                   {/* Firebase Config Section */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '30px', background: '#f8fafc', borderRadius: '24px', border: '1px solid #e2e8f0' }}>
                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Database size={20} color="#3b82f6" />
-                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>CONFIGURACIÓN DE FIREBASE</h5>
+                        <h5 style={{ margin: 0, fontSize: '14px', fontWeight: '800', color: '#1e293b' }}>CONFIGURACIÓN BASE DE DATOS</h5>
                      </div>
                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div>
