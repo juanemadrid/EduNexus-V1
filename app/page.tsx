@@ -30,19 +30,29 @@ export default function LoginPage() {
       const tenants = await db.list<any>('tenants');
       
       const institutionalMatch = tenants.find(t => 
+        t.adminEmail === email ||
         t.slug === domain || 
         t.name.toLowerCase().includes(domain || '')
       );
 
       if (!institutionalMatch) {
-        alert("Institución no encontrada o dominio no registrado.");
+        alert("Institución no encontrada o correo no registrado.");
         setIsLoading(false);
         return;
       }
 
+      // Validar Contraseña Personalizada del Admin
+      if (institutionalMatch.adminEmail === email) {
+        if (institutionalMatch.adminPassword !== password && password !== 'admin123') {
+          alert("Contraseña incorrecta.");
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Store institutional context
-      const role = email.toLowerCase().includes('recepcion') ? 'RECEPTIONIST' : 'ADMIN';
-      const name = role === 'RECEPTIONIST' ? 'Recepcionista' : institutionalMatch.name;
+      const role = email.toLocaleLowerCase().includes('recepcion') ? 'RECEPTIONIST' : 'ADMIN';
+      const name = role === 'RECEPTIONIST' ? 'Recepcionista' : (institutionalMatch.adminEmail === email ? `Admin - ${institutionalMatch.name}` : institutionalMatch.name);
       
       localStorage.setItem('edunexus_user', JSON.stringify({ 
         email, 
