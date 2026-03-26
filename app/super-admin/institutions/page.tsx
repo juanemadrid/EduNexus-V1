@@ -60,12 +60,36 @@ export default function InstitutionsManagement() {
       if (editingInst) {
         await db.update('tenants', editingInst.id, formData);
       } else {
+        // 1. Create the tenant document
+        const tenantId = formData.slug; // Use slug as custom ID
         await db.create('tenants', { 
+          id: tenantId,
           ...formData, 
           createdAt: Date.now(), 
-          usersCount: 0 
+          usersCount: 1 
         });
+
+        // 2. Auto-generate initial Admin credentials for this Tenant
+        const adminEmail = `admin@${formData.slug}.com`;
+        const adminPassword = 'admin'; // Contraseña inicial fija: "admin"
+        
+        // 3. Save the Admin in the TENANT'S database
+        const tenantConfig = formData.type === 'RENTAL' ? defaultFirebaseConfig : formData.firebaseConfig;
+        
+        await db.create('users', {
+          id: adminEmail,
+          email: adminEmail,
+          password: adminPassword, // En producción real se debe encriptar, pero para el demo guardamos la original
+          name: `Admin - ${formData.name}`,
+          role: 'ADMIN',
+          status: 'ACTIVE',
+          tenantId: tenantId,
+          createdAt: Date.now()
+        }, tenantConfig);
+
+        alert(`¡Institución creada exitosamente!\n\nCredenciales del Administrador:\nCorreo: ${adminEmail}\nContraseña: ${adminPassword}`);
       }
+
       await fetchInstitutions();
       setIsModalOpen(false);
       setEditingInst(null);
