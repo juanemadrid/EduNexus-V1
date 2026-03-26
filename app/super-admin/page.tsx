@@ -188,9 +188,9 @@ export default function SuperAdminDashboard() {
           }}>
              <h4 style={{ fontSize: '18px', fontWeight: '900', margin: 0 }}>Nueva Institución</h4>
              <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>Registra un nuevo cliente y configura su base de datos Firebase.</p>
-             <Link href="/super-admin/institutions/create">
+             <Link href="/super-admin/institutions">
                <button className="btn-premium" style={{ width: '100%', background: '#3b82f6', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                 <Plus size={18} /> CREAR AHORA
+                 <Plus size={18} /> GESTIONAR INSTITUCIONES
                </button>
              </Link>
           </div>
