@@ -76,7 +76,7 @@ export default function EvaluationsPage() {
     if (value !== '' && (isNaN(num) || num < 0 || num > 5)) return; 
     
     // Validar formato (max 1 decimal)
-    if (value.includes('.') && value.split('.')[1].length > 1) return;
+    if (value.includes('.') && (value.split('.')[1]?.length ?? 0) > 1) return;
 
     const key = `${selectedCursoId}_${studentId}`;
     setGrades((prev: any) => ({
