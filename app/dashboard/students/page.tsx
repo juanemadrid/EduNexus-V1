@@ -1,19 +1,36 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
-import { MOCK_STUDENTS } from '@/lib/mockData';
+import { db } from '@/lib/db';
 import { MoreHorizontal, Mail, LineChart, Search, Plus } from 'lucide-react';
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  const [students, setStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        const data = await db.list<any>('students');
+        setStudents(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadStudents();
+  }, []);
+
   const handleGlobalSearch = (val: string) => {
     setSearchTerm(val);
   };
 
-  const filteredStudents = MOCK_STUDENTS.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+  const filteredStudents = students.filter(s => 
+    s.name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
     (statusFilter === 'all' || s.status === statusFilter)
   );
 
@@ -22,7 +39,7 @@ export default function StudentsPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
           <h1 className="heading-premium" style={{ fontSize: '36px', fontWeight: '800', letterSpacing: '-1.5px' }}>Maestro de Estudiantes</h1>
-          <p style={{ color: 'var(--text-dim)', fontSize: '15px', fontWeight: '500' }}>Total matriculados: <span style={{ color: 'var(--text-main)', fontWeight: '700' }}>{MOCK_STUDENTS.length}</span></p>
+          <p style={{ color: 'var(--text-dim)', fontSize: '15px', fontWeight: '500' }}>Total matriculados: <span style={{ color: 'var(--text-main)', fontWeight: '700' }}>{students.length}</span></p>
         </div>
         <button className="btn-premium" style={{ display: 'flex', alignItems: 'center', gap: '10px' }} onClick={() => alert('Abriendo Módulo de Matrícula Nacional...')}>
           <Plus size={20} strokeWidth={3} /> Matricular Nuevo
@@ -102,13 +119,17 @@ export default function StudentsPage() {
           </tbody>
         </table>
         
-        {filteredStudents.length === 0 && (
+        {isLoading ? (
+          <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-dim)' }}>
+             <h3 style={{ fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Cargando estudiantes...</h3>
+          </div>
+        ) : filteredStudents.length === 0 ? (
           <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-dim)' }}>
              <Search size={56} style={{ marginBottom: '20px', opacity: 0.15 }} />
              <h3 style={{ fontWeight: '800', color: 'var(--text-main)', marginBottom: '8px' }}>Sin resultados</h3>
-             <p style={{ fontSize: '14px' }}>No hay estudiantes que coincidan con la búsqueda "{searchTerm}"</p>
+             <p style={{ fontSize: '14px' }}>No hay estudiantes registrados o que coincidan con la búsqueda "{searchTerm}"</p>
           </div>
-        )}
+        ) : null}
       </div>
     </DashboardLayout>
   );

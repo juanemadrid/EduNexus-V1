@@ -145,7 +145,7 @@ function BasicInfoContent() {
       details: { ...form, lugarNacimiento: lugarNac, residence: residencia, barrio },
     };
     
-    db.create('students', newStudent, form.numeroId).then(() => {
+    db.create('students', newStudent).then(() => {
       fetchStudents();
       setRegisterSuccess(true);
     }).catch(err => {
@@ -269,7 +269,7 @@ function BasicInfoContent() {
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#64748b' }}>{s.type || 'Estudiante'}</td>
                   <td style={{ padding: '14px 24px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                      <Link href={`/dashboard/institutional/students/basic-info/${s.id}`}>
+                      <Link href={`/dashboard/students/basic-info/${s.id}`}>
                         <button title="Ver detalles" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}>
                           <Eye size={20} />
                         </button>

@@ -1,4 +1,5 @@
 import { MOCK_STUDENTS, MOCK_TEACHERS, MOCK_PAYMENTS, MOCK_ACTIVITY } from './mockData';
+import { db } from '@/lib/db';
 
 export interface DashboardStats {
   students: {
@@ -28,35 +29,22 @@ export interface Activity {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  // Simular un retraso de red
-  await new Promise((resolve) => setTimeout(resolve, 300));
-
   let totalStudents = 0;
   let totalTeachers = 0;
   let totalPayments = 0;
   let overduePayments = 0;
 
-  if (typeof window !== 'undefined') {
-    const studentsSaved = localStorage.getItem('edunexus_registered_students');
-    if (studentsSaved) {
-      const students = JSON.parse(studentsSaved);
-      totalStudents = students.filter((s: any) => s.isActive !== false).length;
-    }
-
-    const teachersSaved = localStorage.getItem('edunexus_registered_teachers');
-    if (teachersSaved) {
-      const teachers = JSON.parse(teachersSaved);
-      totalTeachers = teachers.filter((t: any) => t.isActive !== false).length;
-    }
-
-    const paymentsSaved = localStorage.getItem('edunexus_registered_payments');
-    if (paymentsSaved) {
-      const payments = JSON.parse(paymentsSaved);
-      totalPayments = payments
-        .filter((p: any) => p.status === 'paid')
-        .reduce((sum: number, p: any) => sum + p.amount, 0);
-      overduePayments = payments.filter((p: any) => p.status === 'overdue').length;
-    }
+  try {
+    const [students, teachers] = await Promise.all([
+      db.list<any>('students').catch(() => []),
+      db.list<any>('teachers').catch(() => [])
+    ]);
+    
+    totalStudents = students.filter((s: any) => s.isActive !== false).length;
+    totalTeachers = teachers.filter((t: any) => t.isActive !== false).length;
+    
+  } catch (error) {
+    console.error("Error fetching stats:", error);
   }
 
   return {

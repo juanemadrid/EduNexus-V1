@@ -77,11 +77,7 @@ function CodebtorsBasicInfoContent() {
     if (parsed.length > 0) {
       setLocalParticipants(parsed);
     } else {
-      const seedData = [
-        { id: '10012233', name: 'JULIAN DAVID GOMEZ', type: 'Codeudor', isActive: true, tipoCodeudor: 'Externo', correo: 'julian@example.com', celular: '3123456789' }
-      ];
-      localStorage.setItem('edunexus_registered_codebtors', JSON.stringify(seedData));
-      setLocalParticipants(seedData);
+      setLocalParticipants([]);
     }
   }, []);
 

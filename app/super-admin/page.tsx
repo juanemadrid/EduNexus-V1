@@ -22,6 +22,9 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        // Enforce master db context before fetching
+        sessionStorage.removeItem('edunexus_tenant_config');
+        localStorage.removeItem('edunexus_tenant');
         const data = await db.list<any>('tenants');
         setTenants(data);
       } catch (error) {

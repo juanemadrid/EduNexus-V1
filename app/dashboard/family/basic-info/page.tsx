@@ -77,11 +77,7 @@ function FamilyBasicInfoContent() {
     if (parsed.length > 0) {
       setLocalFamily(parsed);
     } else {
-      const seedData = [
-        { id: '45339211', name: 'GLORIA ESPERANZA REQUENA', type: 'Familiar', isActive: true, parentesco: 'Madre', correo: 'gloria@example.com', celular: '3151234567' }
-      ];
-      localStorage.setItem('edunexus_registered_family', JSON.stringify(seedData));
-      setLocalFamily(seedData);
+      setLocalFamily([]);
     }
   }, []);
 
@@ -212,7 +208,7 @@ function FamilyBasicInfoContent() {
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#334155', fontWeight: '500' }}>{s.id}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#64748b' }}>{s.parentesco || 'Familiar'}</td>
                   <td style={{ padding: '14px 24px', textAlign: 'center' }}>
-                    <Link href={`/dashboard/institutional/family/basic-info/${s.id}`}>
+                    <Link href={`/dashboard/family/basic-info/${s.id}`}>
                       <button title="Ver detalles" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                         <Eye size={20} />
                       </button>

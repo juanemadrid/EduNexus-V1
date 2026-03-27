@@ -59,10 +59,40 @@ export class FirestoreProvider implements DBProvider {
     return null; 
   }
 
+  private getTenantContext() {
+    if (typeof window !== 'undefined') {
+      const userSaved = localStorage.getItem('edunexus_user');
+      if (userSaved) {
+        try {
+          const user = JSON.parse(userSaved);
+          if (user.role !== 'SUPER_ADMIN' && user.tenantId) {
+             return { id: user.tenantId, type: user.tenantType || 'RENTAL' };
+          }
+        } catch (e) {
+          console.error("Error parsing user context");
+        }
+      }
+    }
+    return null;
+  }
+
+  private resolveCollectionName(originalName: string): string {
+    const globalCollections = ['tenants', 'packages', 'admin_logs'];
+    if (globalCollections.includes(originalName)) return originalName;
+
+    const tenant = this.getTenantContext();
+    // Only prefix for RENTAL. SALE uses their own database so root collections are completely isolated.
+    if (tenant && tenant.type === 'RENTAL') {
+      return `${tenant.id}_${originalName}`;
+    }
+    return originalName;
+  }
+
   async get<T>(collectionName: string, id: string, config?: FirebaseConfig): Promise<T | null> {
     const targetConfig = this.resolveConfig(config);
     const db = this.getDb(targetConfig);
-    const docRef = doc(db, collectionName, id);
+    const resolvedCollection = this.resolveCollectionName(collectionName);
+    const docRef = doc(db, resolvedCollection, id);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
@@ -74,7 +104,8 @@ export class FirestoreProvider implements DBProvider {
   async list<T>(collectionName: string, filters?: any, config?: FirebaseConfig): Promise<T[]> {
     const targetConfig = this.resolveConfig(config);
     const db = this.getDb(targetConfig);
-    const colRef = collection(db, collectionName);
+    const resolvedCollection = this.resolveCollectionName(collectionName);
+    const colRef = collection(db, resolvedCollection);
     
     let q = query(colRef);
     if (filters) {
@@ -86,22 +117,23 @@ export class FirestoreProvider implements DBProvider {
     }
 
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+    return querySnapshot.docs.map(docSnap => ({ _docId: docSnap.id, id: docSnap.id, ...docSnap.data() } as T));
   }
 
   async create(collectionName: string, data: any, config?: FirebaseConfig): Promise<string> {
     const targetConfig = this.resolveConfig(config);
     const db = this.getDb(targetConfig);
+    const resolvedCollection = this.resolveCollectionName(collectionName);
     
     if (data.id) {
-      const docRef = doc(db, collectionName, data.id);
+      const docRef = doc(db, resolvedCollection, data.id);
       await setDoc(docRef, {
         ...data,
         createdAt: Date.now()
       });
       return data.id;
     } else {
-      const colRef = collection(db, collectionName);
+      const colRef = collection(db, resolvedCollection);
       const docRef = await addDoc(colRef, {
         ...data,
         createdAt: Date.now()
@@ -113,7 +145,8 @@ export class FirestoreProvider implements DBProvider {
   async update(collectionName: string, id: string, data: any, config?: FirebaseConfig): Promise<void> {
     const targetConfig = this.resolveConfig(config);
     const db = this.getDb(targetConfig);
-    const docRef = doc(db, collectionName, id);
+    const resolvedCollection = this.resolveCollectionName(collectionName);
+    const docRef = doc(db, resolvedCollection, id);
     await updateDoc(docRef, {
       ...data,
       updatedAt: Date.now()
@@ -123,7 +156,8 @@ export class FirestoreProvider implements DBProvider {
   async delete(collectionName: string, id: string, config?: FirebaseConfig): Promise<void> {
     const targetConfig = this.resolveConfig(config);
     const db = this.getDb(targetConfig);
-    const docRef = doc(db, collectionName, id);
+    const resolvedCollection = this.resolveCollectionName(collectionName);
+    const docRef = doc(db, resolvedCollection, id);
     await deleteDoc(docRef);
   }
 }

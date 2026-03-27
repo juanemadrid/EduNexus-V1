@@ -77,11 +77,7 @@ function ParticipantsBasicInfoContent() {
     if (parsed.length > 0) {
       setLocalParticipants(parsed);
     } else {
-      const seedData = [
-        { id: '10012233', name: 'JULIAN DAVID GOMEZ', type: 'Participante', isActive: true, tipoParticipante: 'Externo', correo: 'julian@example.com', celular: '3123456789' }
-      ];
-      localStorage.setItem('edunexus_registered_participants', JSON.stringify(seedData));
-      setLocalParticipants(seedData);
+      setLocalParticipants([]);
     }
   }, []);
 
@@ -212,7 +208,7 @@ function ParticipantsBasicInfoContent() {
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#334155', fontWeight: '500' }}>{s.id}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#64748b' }}>{s.tipoParticipante || 'Externo'}</td>
                   <td style={{ padding: '14px 24px', textAlign: 'center' }}>
-                    <Link href={`/dashboard/institutional/participants/basic-info/${s.id}`}>
+                    <Link href={`/dashboard/participants/basic-info/${s.id}`}>
                       <button title="Ver detalles" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                         <Eye size={20} />
                       </button>

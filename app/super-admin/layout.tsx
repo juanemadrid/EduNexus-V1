@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -18,6 +18,12 @@ import { motion } from 'framer-motion';
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  
+  // Ensure we are in the master database context by clearing any tenant-specific configs
+  useEffect(() => {
+    sessionStorage.removeItem('edunexus_tenant_config');
+    localStorage.removeItem('edunexus_tenant');
+  }, [pathname]);
   
   const menuItems = [
     { name: 'Dashboard', icon: <BarChart3 size={20} />, href: '/super-admin' },

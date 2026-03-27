@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { exportToCSV, importFromCSV } from '@/lib/dataUtils';
+import { db } from '@/lib/db';
 
 interface NavItem {
   name: string;
@@ -163,13 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAppearanceModal, setShowAppearanceModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  const [institutionalConfig, setInstitutionalConfig] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('edunexus_institutional_appearance');
-      return saved ? JSON.parse(saved) : { logo: '', primaryColor: '#10b981', subdomain: '' };
-    }
-    return { logo: '', primaryColor: '#10b981', subdomain: '' };
-  });
+  const [institutionalConfig, setInstitutionalConfig] = useState<any>({ logo: '', primaryColor: '#10b981', subdomain: '' });
   
   const [userProfile, setUserProfile] = useState({ name: 'Jader Antonio', role: 'ADMIN', roleLabel: 'RECTORÍA MASTER' });
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -185,7 +180,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const g = parseInt(hex.substring(2, 4), 16);
     const b = parseInt(hex.substring(4, 6), 16);
     root.style.setProperty('--primary-glow', `rgba(${r}, ${g}, ${b}, 0.15)`);
+  }, [institutionalConfig.primaryColor]);
 
+  React.useEffect(() => {
     const savedUser = localStorage.getItem('edunexus_user');
     if (savedUser) {
       try {
@@ -197,7 +194,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         });
       } catch(e) {}
     }
-  }, [institutionalConfig.primaryColor]);
+
+    const loadConfig = async () => {
+      try {
+        const configData = await db.get<any>('settings', 'appearance');
+        if (configData) {
+          setInstitutionalConfig(configData);
+        }
+      } catch (err) {
+        console.error("Error loading appearance:", err);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
@@ -552,7 +561,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button onClick={() => setShowAppearanceModal(false)} style={{ flex: 1, height: '45px', borderRadius: '12px', border: 'none', background: '#f1f5f9', fontWeight: '700', cursor: 'pointer' }}>Cancelar</button>
-                <button onClick={() => { localStorage.setItem('edunexus_institutional_appearance', JSON.stringify(institutionalConfig)); setShowAppearanceModal(false); showToast('✅ Cambios guardados'); }} style={{ flex: 1, height: '45px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '700', cursor: 'pointer' }}>Guardar</button>
+                <button 
+                  onClick={async () => { 
+                    try {
+                      await db.create('settings', { id: 'appearance', ...institutionalConfig });
+                      setShowAppearanceModal(false); 
+                      showToast('✅ Cambios guardados'); 
+                    } catch (err) {
+                      showToast('Error al guardar configuración', 'error');
+                    }
+                  }} 
+                  style={{ flex: 1, height: '45px', borderRadius: '12px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '700', cursor: 'pointer' }}
+                >
+                  Guardar
+                </button>
               </div>
             </div>
           </div>

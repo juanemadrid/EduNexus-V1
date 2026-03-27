@@ -59,11 +59,16 @@ export default function LoginPage() {
         role, 
         name,
         tenantId: institutionalMatch.id,
-        tenantName: institutionalMatch.name
+        tenantName: institutionalMatch.name,
+        tenantType: institutionalMatch.type || 'RENTAL'
       }));
       
       // CRITICAL: Store the institutional Firebase config
-      sessionStorage.setItem('edunexus_tenant_config', JSON.stringify(institutionalMatch.firebaseConfig));
+      // For RENTAL institutions, always use the master config, never the empty one
+      const configToSave = (institutionalMatch.type === 'RENTAL' || !institutionalMatch.firebaseConfig?.projectId)
+        ? defaultFirebaseConfig
+        : institutionalMatch.firebaseConfig;
+      sessionStorage.setItem('edunexus_tenant_config', JSON.stringify(configToSave));
 
       window.location.href = role === 'RECEPTIONIST' ? '/dashboard/reception' : '/dashboard';
     } catch (error) {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
+import Draggable from 'react-draggable';
 import { 
   Search, 
   Printer, 
@@ -47,6 +48,19 @@ const IDCardGenerator = () => {
   const [generatedStudents, setGeneratedStudents] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   
+  // Designer State
+  const [designMode, setDesignMode] = useState(true);
+  const [positions, setPositions] = useState<any>({});
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const addToHistory = (action: any) => setHistory(prev => [...prev, action]);
+  
+  const [headerDesign, setHeaderDesign] = useState('standard');
+  const [bgGradient, setBgGradient] = useState('');
+  const [bgPattern, setBgPattern] = useState('none');
+  const [watermarkUrl, setWatermarkUrl] = useState('');
+  const [watermarkOpacity, setWatermarkOpacity] = useState(0.1);
+
   const [courses, setCourses] = useState<any[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
   
@@ -226,212 +240,433 @@ const IDCardGenerator = () => {
     </div>
   );
 
-  const VerticalTemplate = ({ student }: { student: any }) => (
-    <div style={{ width: ID_CARD_WIDTH, height: ID_CARD_HEIGHT, background: '#ffffff', borderRadius: '24px', overflow: 'hidden', position: 'relative', border: '1px solid #d1d5db', display: 'flex', flexDirection: 'column', fontFamily: '"Segoe UI", Roboto, sans-serif', boxShadow: '0 15px 35px rgba(0,0,0,0.1)' }}>
-       <div style={{ height: '95px', background: cardColor, display: 'flex', alignItems: 'center', padding: '0 20px', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ width: `${logoSize}px`, height: `${logoSize}px`, background: 'white', borderRadius: '50%', padding: '8px', zIndex: 2, boxShadow: '0 4px 10px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${cardColor}`, transform: `translateY(${logoY}px)` }}>
-             {instLogo ? <img src={instLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Shield color={cardColor} size={logoSize * 0.5} />}
-          </div>
-          <div style={{ flex: 1, paddingLeft: '15px', zIndex: 2, textAlign: 'center' }}>
-             <h2 style={{ margin: 0, fontSize: '14px', color: 'white', fontWeight: '900', letterSpacing: '1px', textTransform: 'uppercase' }}>— {instName.split(' ')[0]} —</h2>
-             <h3 style={{ margin: 0, fontSize: '18px', color: 'white', fontWeight: '950', letterSpacing: '0.5px' }}>{instName.split(' ').slice(1).join(' ').toUpperCase()}</h3>
-          </div>
-       </div>
-        <div style={{ position: 'relative', height: '35px', width: '100%', zIndex: 1, marginTop: '-15px' }}>
-           <svg viewBox="0 0 500 150" preserveAspectRatio="none" style={{ height: '100%', width: '100%' }}>
-              <path d="M0,80 C150,150 350,0 500,80 L500,0 L0,0 Z" fill={cardColor} />
-             <path d="M0,100 C150,170 350,20 500,100 L500,80 C350,0 150,150 0,80 Z" fill="#ffffff" />
-             <path d="M0,120 C150,190 350,40 500,120 L500,100 C350,20 150,170 0,100 Z" fill="#44ad38" />
-             <path d="M0,140 C150,210 350,60 500,140 L500,120 C350,40 150,190 0,120 Z" fill="#eab308" />
+  const DesignerBackground = ({ color, opacity, pattern }: { color: string, opacity: number, pattern: string }) => {
+    let backgroundStyle: React.CSSProperties = { position: 'absolute', inset: 0, zIndex: 0, opacity };
+    if (pattern === 'dots') {
+        backgroundStyle.backgroundImage = `radial-gradient(${color} 2px, transparent 2px)`;
+        backgroundStyle.backgroundSize = '20px 20px';
+    } else if (pattern === 'lines') {
+        backgroundStyle.backgroundImage = `linear-gradient(45deg, ${color} 25%, transparent 25%, transparent 50%, ${color} 50%, ${color} 75%, transparent 75%, transparent)`;
+        backgroundStyle.backgroundSize = '20px 20px';
+    } else if (pattern === 'grid') {
+        backgroundStyle.backgroundImage = `linear-gradient(${color} 1px, transparent 1px), linear-gradient(90deg, ${color} 1px, transparent 1px)`;
+        backgroundStyle.backgroundSize = '20px 20px';
+    }
+    return <div style={backgroundStyle} />;
+  };
+
+  const WatermarkLogo = ({ url, opacity }: { url: string, opacity: number }) => {
+    if (!url) return null;
+    return (
+      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5, pointerEvents: 'none', opacity }}>
+        <img src={url} alt="Watermark" style={{ width: '60%', height: '60%', objectFit: 'contain', filter: 'grayscale(100%)' }} />
+      </div>
+    );
+  };
+
+  const DraggableElement = ({ 
+    id, children, style, 
+    designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory 
+  }: any) => {
+    const isSelected = selectedElement === id;
+    const currentPos = positions[id] || { x: 0, y: 0 };
+    const nodeRef = React.useRef(null);
+    
+    // The interaction is handled only when designMode is active
+    if (!designMode) return <div style={{ ...style, transform: `translate(${currentPos.x}px, ${currentPos.y}px)` }}>{children}</div>;
+    
+    return (
+      <Draggable 
+        nodeRef={nodeRef}
+        position={currentPos} 
+        onDrag={(e, data) => { setPositions((prev: any) => ({ ...prev, [id]: { x: data.x, y: data.y } })) }} 
+        onStop={(e, data) => { addToHistory({ type: 'MOVE', element: id, x: data.x, y: data.y }) }}
+        onStart={() => setSelectedElement(id)}
+      >
+        <div ref={nodeRef} style={{ ...style, cursor: 'move', userSelect: 'none', border: isSelected ? '2px dashed #3b82f6' : 'none' }}>
+           {children}
+        </div>
+      </Draggable>
+    );
+  };
+
+  const VerticalTemplate = ({ 
+    student, designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory,
+    cardColor, bgGradient, bgPattern, headerDesign, instName, instLogo, userType, getUserSubtitle,
+    watermarkUrl, watermarkOpacity, institutionalConfig 
+  }: any) => {
+    const designerProps = { designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory };
+    const accentColor = cardColor || '#0f172a';
+
+    return (
+      <div style={{ 
+        width: ID_CARD_WIDTH, height: ID_CARD_HEIGHT,
+        background: '#ffffff',
+        borderRadius: '20px', overflow: 'hidden', position: 'relative', display: 'block',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.12)',
+        fontFamily: '"Segoe UI", Roboto, sans-serif',
+      }}>
+        <DesignerBackground color={accentColor} opacity={0.04} pattern={bgPattern} />
+        <WatermarkLogo url={watermarkUrl} opacity={watermarkOpacity} />
+
+        {/* Left accent stripe */}
+        <div style={{ position: 'absolute', left: 0, top: 0, width: '90px', height: '100%', background: accentColor, zIndex: 1 }}>
+          <div style={{ position: 'absolute', bottom: 0, right: -30, width: 0, height: 0, 
+            borderLeft: '30px solid transparent', borderBottom: `120px solid ${accentColor}` }} />
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.15 }} viewBox="0 0 90 600">
+            {Array.from({length: 12}, (_, i) => (
+              <line key={i} x1="0" y1={i*50} x2="90" y2={i*50-30} stroke="white" strokeWidth="1"/>
+            ))}
           </svg>
-       </div>
-       <div style={{ flex: 1, padding: '15px 25px', zIndex: 2 }}>
-          <div style={{ display: 'flex', gap: '20px', marginBottom: '15px' }}>
-             <div style={{ width: '135px', height: '165px', border: '1px solid #d1d5db', padding: '3px', background: 'white', borderRadius: '4px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
-                <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
-                   {student.photo ? (
-                      <img src={student.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                   ) : (
-                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
-                         <User size={60} color="#9ca3af" />
-                      </div>
-                   )}
-                </div>
-             </div>
-             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '10px' }}>
-                <div>
-                   <span style={{ fontSize: '12px', color: '#1e3a8a', fontWeight: '800' }}>Nombre: </span>
-                   <span style={{ fontSize: '13px', color: '#111827', fontWeight: '950' }}>{student.name}</span>
-                </div>
-                <div>
-                   <span style={{ fontSize: '12px', color: '#1e3a8a', fontWeight: '800' }}>{userType === 'student' ? 'Matrícula:' : 'Cód. Docente:'} </span>
-                   <span style={{ fontSize: '13px', color: '#111827', fontWeight: '950' }}>{student.id}</span>
-                </div>
-                <div>
-                   <span style={{ fontSize: '12px', color: '#1e3a8a', fontWeight: '800' }}>{userType === 'student' ? 'Grado:' : 'Especialidad:'} </span>
-                   <span style={{ fontSize: '13px', color: '#111827', fontWeight: '950' }}>{getUserSubtitle(student)}</span>
-                </div>
-                <div>
-                   <span style={{ fontSize: '12px', color: '#1e3a8a', fontWeight: '800' }}>Vigencia: </span>
-                   <span style={{ fontSize: '13px', color: '#111827', fontWeight: '950' }}>2026-2027</span>
-                </div>
-             </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', marginTop: '10px' }}>
-             <div style={{ background: 'white', padding: '10px', border: '1px solid #e5e7eb', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${student.id}&color=111827`} 
-                  alt="QR Code"
-                  style={{ width: '110px', height: '110px' }}
-                />
-             </div>
-              <div style={{ padding: '6px 20px', background: cardColor, color: 'white', borderRadius: '4px', fontSize: '11px', fontWeight: '950', textAlign: 'center', width: '200px', borderBottom: '3px solid #44ad38' }}>
-                {userType === 'student' ? 'CONTROL DE ASISTENCIA' : 'ACCESO DOCENTE'}
-             </div>
-          </div>
-       </div>
-       <div style={{ height: '50px', position: 'relative', marginTop: 'auto' }}>
-          <svg viewBox="0 0 500 150" preserveAspectRatio="none" style={{ position: 'absolute', top: '-40px', left: 0, height: '40px', width: '100%', transform: 'scaleY(-1)' }}>
-              <path d="M0,80 C150,150 350,0 500,80 L500,0 L0,0 Z" fill={cardColor} />
-              <path d="M0,100 C150,170 350,20 500,100 L500,80 C350,0 150,150 0,80 Z" fill="#ffffff" />
-              <path d="M0,120 C150,190 350,40 500,120 L500,100 C350,20 150,170 0,100 Z" fill="#44ad38" />
-           </svg>
-           <div style={{ height: '50px', background: cardColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: 'white', fontSize: '10px', fontWeight: '900', letterSpacing: '2px', textTransform: 'uppercase' }}>{institutionalConfig.slogan}</span>
-          </div>
-       </div>
-    </div>
-  );
+        </div>
 
-  const HorizontalTemplate = ({ student }: { student: any }) => (
-    <div style={{ width: ID_CARD_HEIGHT, height: ID_CARD_WIDTH, background: '#ffffff', borderRadius: '20px', overflow: 'hidden', position: 'relative', border: '1px solid #d1d5db', display: 'flex', flexDirection: 'column', fontFamily: '"Segoe UI", Roboto, sans-serif', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
-         <div style={{ height: '35px', background: cardColor, display: 'flex', alignItems: 'center', padding: '0 20px', position: 'relative' }}>
-            <div style={{ width: '30px', height: '30px', background: 'white', borderRadius: '50%', padding: '4px', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${cardColor}`, position: 'absolute', top: '2.5px' }}>
-               {instLogo ? <img src={instLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Shield color={cardColor} size={18} />}
+        <DraggableElement id="v_logo" {...designerProps} style={{ position: 'absolute', left: '15px', top: '30px', width: '60px', height: '60px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.2)', borderRadius: '14px', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid rgba(255,255,255,0.5)' }}>
+            {instLogo ? <img src={instLogo} style={{ width: '80%', height: '80%', objectFit: 'contain', filter: 'brightness(10)' }} /> : <Shield color="white" size={28} />}
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="v_inst_vertical" {...designerProps} style={{ position: 'absolute', left: '0px', top: '120px', width: '90px', height: '320px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: '9px', fontWeight: '800', letterSpacing: '3px', textTransform: 'uppercase', writingMode: 'vertical-rl', textOrientation: 'mixed', transform: 'rotate(180deg)' }}>
+              {instName}
+            </span>
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="v_type_badge" {...designerProps} style={{ position: 'absolute', left: '10px', bottom: '80px', width: '70px', height: '28px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.2)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.3)' }}>
+            <span style={{ color: 'white', fontSize: '7px', fontWeight: '900', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+              {userType === 'student' ? 'ALUMNO' : 'DOCENTE'}
+            </span>
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="v_header_text" {...designerProps} style={{ position: 'absolute', left: '110px', top: '25px', width: '270px', height: '55px', zIndex: 10 }}>
+          <div style={{ borderBottom: `2px solid ${accentColor}`, paddingBottom: '8px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a', letterSpacing: '0.5px', lineHeight: 1.1 }}>
+              {(instName || 'Institución Educativa').toUpperCase()}
             </div>
-           <div style={{ flex: 1, paddingLeft: '45px', display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-              <span style={{ fontSize: '14px', color: 'white', fontWeight: '950', letterSpacing: '0.5px' }}>{instName.toUpperCase()}</span>
-           </div>
-           <div style={{ fontSize: '7px', color: 'rgba(255,255,255,0.6)', fontWeight: '900', letterSpacing: '2px' }}>{userType === 'student' ? 'STUDENT ID' : 'DOCENTE ID'}</div>
-        </div>
-         <div style={{ position: 'relative', height: '12px', width: '100%', zIndex: 1 }}>
-            <svg viewBox="0 0 500 150" preserveAspectRatio="none" style={{ height: '100%', width: '100%' }}>
-               <path d="M0,80 C150,150 350,0 500,80 L500,0 L0,0 Z" fill={cardColor} />
-              <path d="M0,100 C150,170 350,20 500,100 L500,80 C350,0 150,150 0,80 Z" fill="#ffffff" />
-              <path d="M0,120 C150,190 350,40 500,120 L500,100 C350,20 150,170 0,100 Z" fill="#44ad38" />
-              <path d="M0,140 C150,210 350,60 500,140 L500,120 C350,40 150,190 0,120 Z" fill="#eab308" />
-           </svg>
-        </div>
-        <div style={{ flex: 1, padding: '10px 30px', display: 'flex', gap: '25px', alignItems: 'center' }}>
-           <div style={{ width: '100px', height: '125px', border: '1px solid #d1d5db', padding: '3px', background: 'white', borderRadius: '6px', flexShrink: 0 }}>
-              <div style={{ width: '100%', height: '100%', overflow: 'hidden', borderRadius: '3px' }}>
-                 {student.photo ? (
-                    <img src={student.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                 ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
-                       <User size={50} color="#9ca3af" />
-                    </div>
-                 )}
-              </div>
-           </div>
-           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div>
-                 <h3 style={{ margin: 0, fontSize: '26px', fontWeight: '950', color: '#0f172a', letterSpacing: '-1px', lineHeight: 1 }}>{student.name.toUpperCase()}</h3>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
-                    <span style={{ fontSize: '9px', fontWeight: '950', color: 'white', background: '#44ad38', padding: '3px 12px', borderRadius: '4px' }}>{userType === 'student' ? 'ESTUDIANTE' : 'DOCENTE'}</span>
-                    <span style={{ fontSize: '13px', fontWeight: '900', color: '#64748b' }}>{userType === 'student' ? 'GRADO' : 'ESP.'} {getUserSubtitle(student)}</span>
-                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', padding: '10px', background: 'rgba(0, 74, 153, 0.02)', borderRadius: '8px', border: '1px solid rgba(0, 74, 153, 0.05)' }}>
-                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '8px', color: '#1e3a8a', fontWeight: '850', textTransform: 'uppercase' }}>{userType === 'student' ? 'MATRÍCULA' : 'CÓD. DOCENTE'}</span>
-                    <span style={{ fontSize: '14px', color: '#111827', fontWeight: '950' }}>{student.id}</span>
-                 </div>
-                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '8px', color: '#eab308', fontWeight: '850', textTransform: 'uppercase' }}>VIGENCIA</span>
-                    <span style={{ fontSize: '14px', color: '#111827', fontWeight: '950' }}>2026-2027</span>
-                 </div>
-              </div>
-           </div>
-           <div style={{ background: 'white', padding: '6px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-              <QrCode size={60} color="#111827" />
-           </div>
-        </div>
-         <div style={{ height: '32px', background: cardColor, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 25px', color: 'white' }}>
-           <span style={{ fontSize: '9px', fontWeight: '950', letterSpacing: '1px' }}>{userType === 'student' ? 'CONTROL DE ASISTENCIA' : 'ACCESO DOCENTE'}</span>
-           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Shield size={12} color="#44ad38" />
-              <span style={{ fontSize: '8px', fontWeight: '900', opacity: 0.8 }}>EDUNEXUS SYSTEM 2026</span>
-           </div>
-        </div>
-    </div>
-  );
-
-  const PremiumTemplate = ({ student }: { student: any }) => (
-    <div style={{ width: ID_CARD_WIDTH, height: ID_CARD_HEIGHT, background: '#050a18', borderRadius: '45px', overflow: 'hidden', position: 'relative', border: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexDirection: 'column', fontFamily: '"Inter", sans-serif', color: 'white', boxShadow: '0 60px 120px -20px rgba(0,0,0,0.8), inset 0 0 100px rgba(0,0,0,0.6)' }}>
-       <GuillocheBackground color={cardColor} opacity={0.2} />
-       <motion.div animate={{ y: ['-100%', '600%'], opacity: [0, 1, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 4 }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '2px', background: `linear-gradient(90deg, transparent, ${cardColor}, transparent)`, zIndex: 5, boxShadow: `0 0 20px ${cardColor}` }} />
-       <div style={{ position: 'absolute', top: '35px', right: '-45px', width: '180px', height: '40px', background: `linear-gradient(90deg, ${cardColor}, #3b82f6)`, transform: 'rotate(45deg)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 15px rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <span style={{ color: '#050a18', fontSize: '11px', fontWeight: '950', letterSpacing: '2px', textTransform: 'uppercase' }}>{userType === 'student' ? 'ULTRA MASTER' : 'DOCENTE VIP'}</span>
-       </div>
-       <div style={{ padding: '30px 40px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', zIndex: 2 }}>
-          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: cardColor, animation: 'pulse 2s infinite' }}></div>
-                <span style={{ fontSize: '10px', fontWeight: '950', letterSpacing: '5px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase' }}>SECURE ACCESS</span>
-             </div>
-             <div style={{ width: '52px', height: '42px', background: 'linear-gradient(135deg, #fbbf24 0%, #b45309 100%)', borderRadius: '12px', position: 'relative', overflow: 'hidden', boxShadow: '0 0 30px rgba(251,191,36,0.2), inset 0 0 10px rgba(0,0,0,0.3)' }}>
-                <div style={{ position: 'absolute', top: '10%', bottom: '10%', left: '10%', right: '10%', border: '1px solid rgba(0,0,0,0.2)', borderRadius: '4px' }}></div>
-                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: 'rgba(0,0,0,0.2)' }}></div>
-                <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(0,0,0,0.2)' }}></div>
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.5) 50%, transparent 55%)', backgroundSize: '200% 200%', animation: 'shimmer 4s infinite' }}></div>
-             </div>
+            <div style={{ fontSize: '9px', fontWeight: '600', color: '#64748b', letterSpacing: '1px', marginTop: '2px' }}>
+              {institutionalConfig?.slogan || 'INSTITUCIÓN EDUCATIVA'}
+            </div>
           </div>
-          <div style={{ width: '170px', height: '200px', borderRadius: '45px', background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(30px)', border: '1px solid rgba(255,255,255,0.15)', padding: '12px', boxShadow: '0 40px 80px -20px rgba(0,0,0,0.6)', marginBottom: '30px', position: 'relative' }}>
-             <div style={{ width: '100%', height: '100%', borderRadius: '35px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', position: 'relative' }}>
-                {student.photo ? (
-                   <img src={student.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </DraggableElement>
+
+        <DraggableElement id="v_photo" {...designerProps} style={{ position: 'absolute', left: '110px', top: '100px', width: '140px', height: '175px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', borderRadius: '12px', overflow: 'hidden', border: `3px solid ${accentColor}20`, boxShadow: `0 8px 30px ${accentColor}25` }}>
+            {student?.photo ? (
+              <img src={student.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', background: `linear-gradient(135deg, ${accentColor}15, ${accentColor}30)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <User style={{ width: '50%', height: '50%', color: accentColor }} />
+              </div>
+            )}
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="v_qr" {...designerProps} style={{ position: 'absolute', right: '30px', bottom: '70px', width: '75px', height: '75px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', background: 'white', padding: '5px', borderRadius: '10px', border: `2px solid ${accentColor}20`, boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${student?.id || '0020'}&color=0f172a`} style={{ width: '100%', height: '100%', borderRadius: '6px' }} alt="QR" />
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="v_data" {...designerProps} style={{ position: 'absolute', left: '110px', top: '290px', width: '270px', height: '200px', zIndex: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div>
+              <div style={{ fontSize: '9px', fontWeight: '800', color: accentColor, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '2px' }}>Nombre Completo</div>
+              <div style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a', lineHeight: 1.1 }}>{student?.name || 'JAVIER GÓMEZ'}</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div>
+                <div style={{ fontSize: '8px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{userType === 'student' ? 'Matrícula' : 'Código'}</div>
+                <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b' }}>{student?.id || '20230001'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '8px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{userType === 'student' ? 'Grado' : 'Área'}</div>
+                <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b' }}>{getUserSubtitle(student)}</div>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '8px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Vigencia</div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b' }}>2025 – 2026</div>
+            </div>
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="v_footer" {...designerProps} style={{ position: 'absolute', left: '90px', bottom: '0', width: 'calc(400px - 90px)', height: '50px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', background: `linear-gradient(90deg, ${accentColor}15, ${accentColor}30)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', borderTop: `1px solid ${accentColor}30` }}>
+            <span style={{ fontSize: '9px', fontWeight: '700', color: accentColor, letterSpacing: '2px', textTransform: 'uppercase' }}>ID VERIFICADA</span>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 8px #22c55e' }} />
+          </div>
+        </DraggableElement>
+      </div>
+    );
+  };
+
+  const HorizontalTemplate = ({ 
+    student, designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory,
+    cardColor, bgGradient, bgPattern, instName, instLogo, userType, getUserSubtitle,
+    watermarkUrl, watermarkOpacity, institutionalConfig
+  }: any) => {
+    const designerProps = { designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory };
+    const primaryColor = cardColor || '#0ea5e9';
+    const secondaryColor = '#0f172a'; // Dark slate for contrast
+
+    return (
+      <div style={{ 
+        width: ID_CARD_HEIGHT, height: ID_CARD_WIDTH, // Swapped for horizontal
+        background: '#ffffff',
+        borderRadius: '16px', overflow: 'hidden', position: 'relative', display: 'block',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.1)',
+        fontFamily: '"Inter", sans-serif',
+      }}>
+        <DesignerBackground color={primaryColor} opacity={0.03} pattern={bgPattern} />
+        <WatermarkLogo url={watermarkUrl} opacity={watermarkOpacity} />
+
+        {/* Diagonal Split Background */}
+        <div style={{ position: 'absolute', top: 0, right: 0, width: '60%', height: '100%', 
+            background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`, 
+            clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)', zIndex: 1 }} />
+            
+        {/* Decorative lines on the dark side */}
+        <div style={{ position: 'absolute', top: 0, right: 0, width: '50%', height: '100%', zIndex: 2, overflow: 'hidden', opacity: 0.1 }}>
+            <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path d="M0,100 L100,0 M-20,100 L80,0 M20,100 L120,0" stroke="white" strokeWidth="2" fill="none" />
+            </svg>
+        </div>
+
+        {/* Light section (Left) */}
+        <DraggableElement id="h_logo" {...designerProps} style={{ position: 'absolute', left: '25px', top: '25px', width: '50px', height: '50px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', border: `1.5px solid ${primaryColor}30`, borderRadius: '12px', padding: '6px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+            {instLogo ? <img src={instLogo} style={{ width: '90%', height: '90%', objectFit: 'contain' }} /> : <Shield color={primaryColor} size={24} />}
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="h_inst_name" {...designerProps} style={{ position: 'absolute', left: '85px', top: '30px', width: '150px', height: '40px', zIndex: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
+            <span style={{ fontSize: '11px', fontWeight: '900', color: secondaryColor, letterSpacing: '0.5px', lineHeight: 1.2 }}>{(instName || 'Institución').toUpperCase()}</span>
+            <span style={{ fontSize: '7px', fontWeight: '600', color: '#64748b', letterSpacing: '1px' }}>{institutionalConfig?.slogan || 'EDUCACIÓN SUPERIOR'}</span>
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="h_data" {...designerProps} style={{ position: 'absolute', left: '25px', top: '100px', width: '190px', height: '120px', zIndex: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ fontSize: '8px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Nombre completo</div>
+              <div style={{ fontSize: '15px', fontWeight: '900', color: secondaryColor, lineHeight: 1.1 }}>{student?.name || 'LAURA MARTÍNEZ'}</div>
+            </div>
+            <div style={{ display: 'flex', gap: '20px' }}>
+              <div>
+                <div style={{ fontSize: '7px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{userType === 'student' ? 'Matrícula' : 'Código'}</div>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: secondaryColor }}>{student?.id || '24-0981'}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '7px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>{userType === 'student' ? 'Programa' : 'Departamento'}</div>
+                <div style={{ fontSize: '11px', fontWeight: '800', color: primaryColor }}>{getUserSubtitle(student)}</div>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: '7px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>Válido hasta</div>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: secondaryColor }}>Diciembre 2026</div>
+            </div>
+          </div>
+        </DraggableElement>
+
+        {/* Dark section (Right) */}
+        <DraggableElement id="h_photo" {...designerProps} style={{ position: 'absolute', right: '30px', top: '35px', width: '140px', height: '140px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', borderRadius: '50%', padding: '5px', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+             <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: secondaryColor }}>
+                {student?.photo ? (
+                  <img src={student.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={70} color="rgba(255,255,255,0.1)" /></div>
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     <User size={40} color="rgba(255,255,255,0.5)" />
+                  </div>
                 )}
              </div>
-             <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', padding: '5px 15px', borderRadius: '50px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <span style={{ fontSize: '9px', fontWeight: '950', color: cardColor, letterSpacing: '2px' }}>MATCHED</span>
-             </div>
           </div>
-          <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '950', color: 'white', letterSpacing: '1px', textShadow: '0 10px 20px rgba(0,0,0,0.5)', textAlign: 'center' }}>{student.name.toUpperCase()}</h2>
-          <div style={{ height: '4px', width: '60px', background: `linear-gradient(90deg, ${cardColor}, #4ade80)`, margin: '20px auto', borderRadius: '50px' }}></div>
-          <div style={{ width: '100%', background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(40px)', borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '25px 0', marginTop: 'auto' }}>
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', padding: '0 50px' }}>
-                <div>
-                   <p style={{ margin: 0, fontSize: '8px', color: cardColor, fontWeight: '950', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>{userType === 'student' ? 'Matrícula' : 'Cód. Docente'}</p>
-                   <p style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: 'white' }}>{student.id}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                   <p style={{ margin: 0, fontSize: '8px', color: 'rgba(255,255,255,0.5)', fontWeight: '950', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '8px' }}>{userType === 'student' ? 'Grado' : 'Especialidad'}</p>
-                   <p style={{ margin: 0, fontSize: '14px', fontWeight: '900', color: 'white' }}>{getUserSubtitle(student)}</p>
-                </div>
-             </div>
-          </div>
-       </div>
-       <div style={{ padding: '25px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 2, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '14px', fontWeight: '950', color: 'white', letterSpacing: '1px' }}>{(instName || 'Colegio').split(' ')[0].toUpperCase()} PREMIUM</span>
-             <span style={{ fontSize: '9px', fontWeight: '800', color: '#64748b', letterSpacing: '1px' }}>{userType === 'student' ? 'AUTHENTICATION SUCCESSFUL' : 'TEACHER ACCESS GRANTED'}</span>
-          </div>
-          <div style={{ background: 'white', padding: '8px', borderRadius: '15px', boxShadow: `0 0 30px ${cardColor}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-             <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=45x45&data=${student.id}&color=050a18`} 
-                alt="QR Code"
-                style={{ width: '45px', height: '45px' }}
-              />
-          </div>
-       </div>
-    </div>
-  );
+        </DraggableElement>
 
-  const BackCard = () => (
-    <div style={{ width: activeTemplate === 'horizontal' ? ID_CARD_HEIGHT : ID_CARD_WIDTH, height: activeTemplate === 'horizontal' ? ID_CARD_WIDTH : ID_CARD_HEIGHT, background: 'white', borderRadius: '24px', overflow: 'hidden', position: 'relative', boxShadow: '0 15px 35px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', fontFamily: '"Segoe UI", Roboto, sans-serif' }}>
+        <DraggableElement id="h_qr" {...designerProps} style={{ position: 'absolute', left: '25px', bottom: '25px', width: '75px', height: '75px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', background: 'white', padding: '5px', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 5px 15px rgba(0,0,0,0.05)' }}>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${student?.id || '0020'}&color=0f172a`} style={{ width: '100%', height: '100%', borderRadius: '6px' }} alt="QR" />
+          </div>
+        </DraggableElement>
+
+        <DraggableElement id="h_role_badge" {...designerProps} style={{ position: 'absolute', right: '35px', bottom: '30px', width: '110px', height: '24px', zIndex: 10 }}>
+          <div style={{ width: '100%', height: '100%', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: 'white', fontSize: '8px', fontWeight: '800', letterSpacing: '2px' }}>
+               {userType === 'student' ? 'ESTUDIANTE' : 'PROFESOR'}
+            </span>
+          </div>
+        </DraggableElement>
+
+        {/* Footer Accent */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '6px', background: `linear-gradient(90deg, ${primaryColor}, #10b981)`, zIndex: 15 }} />
+      </div>
+    );
+  };
+
+  const PremiumTemplate = ({ 
+    student, designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory,
+    cardColor, bgGradient, bgPattern, instName, instLogo, userType, getUserSubtitle,
+    watermarkUrl, watermarkOpacity, institutionalConfig
+  }: any) => {
+    const designerProps = { designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory };
+    const accentColor = cardColor || '#d4af37';
+    
+    return (
+      <div style={{ 
+        width: ID_CARD_WIDTH, height: ID_CARD_HEIGHT,
+        background: `linear-gradient(135deg, #1c1c1e 0%, #000000 100%)`,
+        borderRadius: '24px', overflow: 'hidden', position: 'relative', display: 'block',
+        border: '1px solid rgba(255,255,255,0.15)',
+        boxShadow: `0 25px 50px -12px rgba(0,0,0,0.5)`,
+        fontFamily: '"Outfit", "Inter", sans-serif',
+        color: '#ffffff'
+      }}>
+        {/* Subtle metallic sheen */}
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.08) 25%, transparent 30%, transparent 45%, rgba(255,255,255,0.03) 50%, transparent 55%)`, pointerEvents: 'none', zIndex: 1 }} />
+        
+        {/* Glowing orb accent based on chosen color */}
+        <div style={{ position: 'absolute', top: '-20%', right: '-20%', width: '60%', height: '50%', background: `radial-gradient(circle, ${accentColor}40 0%, transparent 70%)`, filter: 'blur(60px)', zIndex: 0 }} />
+
+        <DesignerBackground color={accentColor} opacity={0.05} pattern={bgPattern} />
+        <WatermarkLogo url={watermarkUrl} opacity={watermarkOpacity} />
+
+        {/* Header */}
+        <DraggableElement id="p_header" {...designerProps} style={{ position: 'absolute', left: '30px', top: '30px', width: '280px', height: '50px', zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {instLogo ? <img src={instLogo} style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} /> : <Shield color={accentColor} size={30} />}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '13px', fontWeight: '800', letterSpacing: '3px', color: 'rgba(255,255,255,0.95)', textTransform: 'uppercase' }}>
+                {(instName || 'Institución').toUpperCase()}
+              </span>
+              <span style={{ fontSize: '7px', fontWeight: '500', color: accentColor, letterSpacing: '2px', textTransform: 'uppercase' }}>
+                {institutionalConfig?.slogan || 'EXCELLENCE & PRESTIGE'}
+              </span>
+            </div>
+          </div>
+        </DraggableElement>
+
+        {/* Photo Container */}
+        <DraggableElement id="p_photo" {...designerProps} style={{ position: 'absolute', left: '30px', top: '110px', width: '150px', height: '190px', zIndex: 10 }}>
+           <div style={{ width: '100%', height: '100%', borderRadius: '12px', padding: '3px', background: `linear-gradient(145deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.02) 100%)`, boxShadow: '0 15px 35px rgba(0,0,0,0.4)', position: 'relative' }}>
+              <div style={{ width: '100%', height: '100%', borderRadius: '10px', overflow: 'hidden', background: '#111' }}>
+                 {student?.photo ? (
+                    <img src={student.photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                 ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={50} color="rgba(255,255,255,0.1)" /></div>
+                 )}
+              </div>
+              {/* Corner Accents on photo */}
+              <div style={{ position: 'absolute', top: '-1px', left: '-1px', width: '15px', height: '15px', borderTop: `2px solid ${accentColor}`, borderLeft: `2px solid ${accentColor}`, borderTopLeftRadius: '13px' }} />
+              <div style={{ position: 'absolute', bottom: '-1px', right: '-1px', width: '15px', height: '15px', borderBottom: `2px solid ${accentColor}`, borderRight: `2px solid ${accentColor}`, borderBottomRightRadius: '13px' }} />
+           </div>
+        </DraggableElement>
+
+        {/* Student Info */}
+        <DraggableElement id="p_data" {...designerProps} style={{ position: 'absolute', left: '30px', top: '325px', width: '280px', height: '120px', zIndex: 10 }}>
+           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div>
+                 <span style={{ display: 'block', fontSize: '8px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '4px' }}>Titular / Cardholder</span>
+                 <span style={{ display: 'block', fontSize: '18px', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase', color: 'white', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>{student?.name || 'ALEXANDRA PÉREZ'}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '30px' }}>
+                  <div>
+                      <span style={{ display: 'block', fontSize: '7px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>ID. No.</span>
+                      <span style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: accentColor, fontFamily: 'monospace', letterSpacing: '1px' }}>{student?.id || '24-A09'}</span>
+                  </div>
+                  <div>
+                      <span style={{ display: 'block', fontSize: '7px', fontWeight: '600', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '2px' }}>{userType === 'student' ? 'Carrera' : 'Área'}</span>
+                      <span style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'white', letterSpacing: '0.5px' }}>{getUserSubtitle(student)}</span>
+                  </div>
+              </div>
+           </div>
+        </DraggableElement>
+
+        {/* Clean QR Box Bottom Right */}
+        <DraggableElement id="p_qr" {...designerProps} style={{ position: 'absolute', right: '30px', bottom: '60px', width: '85px', height: '85px', zIndex: 10 }}>
+           <div style={{ width: '100%', height: '100%', padding: '6px', background: 'rgba(255,255,255,0.95)', borderRadius: '12px', boxShadow: `0 15px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${student?.id || '0020'}&color=000000`} style={{ width: '100%', height: '100%', borderRadius: '6px' }} alt="QR" />
+           </div>
+        </DraggableElement>
+
+        {/* Role Badge Bottom Left */}
+        <DraggableElement id="p_role" {...designerProps} style={{ position: 'absolute', left: '30px', bottom: '70px', width: '140px', height: '26px', zIndex: 10 }}>
+           <div style={{ width: '100%', height: '100%', borderRadius: '4px', borderLeft: `3px solid ${accentColor}`, paddingLeft: '10px', display: 'flex', alignItems: 'center' }}>
+               <span style={{ fontSize: '10px', fontWeight: '800', letterSpacing: '3px', color: 'rgba(255,255,255,0.8)' }}>
+                   {userType === 'student' ? 'STUDENT' : 'FACULTY'}
+               </span>
+           </div>
+        </DraggableElement>
+
+        {/* Footer */}
+        <div style={{ position: 'absolute', bottom: '0', left: '0', width: '100%', height: '35px', background: 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', zIndex: 10 }}>
+           <span style={{ fontSize: '7px', fontWeight: '600', color: 'rgba(255,255,255,0.4)', letterSpacing: '1px' }}>VALID UNTIL: DEC 2026</span>
+           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: accentColor, boxShadow: `0 0 8px ${accentColor}` }} />
+              <span style={{ fontSize: '7px', fontWeight: '700', color: accentColor, letterSpacing: '2px' }}>VERIFIED</span>
+           </div>
+        </div>
+      </div>
+    );
+  };
+
+  const BackCard = () => {
+    if (activeTemplate === 'premium') {
+      const accentColor = cardColor || '#d4af37';
+      return (
+        <div style={{ width: ID_CARD_WIDTH, height: ID_CARD_HEIGHT, background: `linear-gradient(135deg, #0f0f11 0%, #1a1a1c 100%)`, borderRadius: '24px', overflow: 'hidden', position: 'relative', boxShadow: '0 15px 40px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', fontFamily: '"Outfit", "Inter", sans-serif', color: 'white', border: '1px solid rgba(255,255,255,0.1)' }}>
+          {/* Subtle sheen */}
+          <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 45%, transparent 50%)`, pointerEvents: 'none', zIndex: 1 }} />
+          
+          <div style={{ height: '80px', display: 'flex', alignItems: 'center', padding: '0 30px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ flex: 1 }}>
+               <h2 style={{ margin: 0, fontSize: '11px', color: 'rgba(255,255,255,0.6)', fontWeight: '600', letterSpacing: '4px', textTransform: 'uppercase' }}>CONTACT INFORMATION</h2>
+               <h3 style={{ margin: '4px 0 0 0', fontSize: '14px', color: 'white', fontWeight: '800', letterSpacing: '2px', textTransform: 'uppercase' }}>{instName}</h3>
+            </div>
+          </div>
+          
+          <div style={{ padding: '30px', flex: 1, position: 'relative', zIndex: 2 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '30px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                   <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><MapPin size={14} color={accentColor} /></div>
+                   <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>{instAddress}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                   <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Phone size={14} color={accentColor} /></div>
+                   <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', letterSpacing: '1px' }}>{instPhone}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                   <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Mail size={14} color={accentColor} /></div>
+                   <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>{instEmail}</span>
+                </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '25px' }}>
+               <h3 style={{ margin: '0 0 15px 0', fontSize: '9px', fontWeight: '700', letterSpacing: '3px', color: accentColor, textTransform: 'uppercase' }}>TERMS OF USE (NON-TRANSFERABLE)</h3>
+               <p style={{ margin: 0, fontSize: '8px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6, textAlign: 'justify', letterSpacing: '0.5px' }}>
+                 This premium identification card is the exclusive property of {instName}. It is strictly personal and non-transferable. 
+                 The cardholder is subject to all institutional regulations and security protocols. If found, please return immediately to the main administrative office.
+               </p>
+            </div>
+          </div>
+          
+          <div style={{ height: '35px', background: accentColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+             <span style={{ fontSize: '8px', fontWeight: '800', color: '#000', letterSpacing: '4px' }}>AUTHORIZED PERSONNEL ONLY</span>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div style={{ width: activeTemplate === 'horizontal' ? ID_CARD_HEIGHT : ID_CARD_WIDTH, height: activeTemplate === 'horizontal' ? ID_CARD_WIDTH : ID_CARD_HEIGHT, background: 'white', borderRadius: '24px', overflow: 'hidden', position: 'relative', boxShadow: '0 15px 35px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', fontFamily: '"Segoe UI", Roboto, sans-serif' }}>
         <div style={{ height: '80px', background: cardColor, display: 'flex', alignItems: 'center', padding: '0 20px', position: 'relative', overflow: 'hidden' }}>
            <div style={{ width: '50px', height: '50px', background: 'white', borderRadius: '50%', padding: '6px', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {instLogo ? <img src={instLogo} style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : <Shield color={cardColor} size={28} />}
@@ -483,13 +718,19 @@ const IDCardGenerator = () => {
        </div>
     </div>
   );
+};
 
   const renderActiveTemplate = (u: any) => {
+    const templateProps = {
+      student: u, designMode, positions, setPositions, selectedElement, setSelectedElement, addToHistory,
+      cardColor, bgGradient, bgPattern, headerDesign, instName, instLogo, userType, getUserSubtitle,
+      watermarkUrl, watermarkOpacity, institutionalConfig
+    };
     switch (activeTemplate) {
-      case 'vertical': return <VerticalTemplate student={u} />;
-      case 'horizontal': return <HorizontalTemplate student={u} />;
-      case 'premium': return <PremiumTemplate student={u} />;
-      default: return <VerticalTemplate student={u} />;
+      case 'vertical': return <VerticalTemplate {...templateProps} />;
+      case 'horizontal': return <HorizontalTemplate {...templateProps} />;
+      case 'premium': return <PremiumTemplate {...templateProps} />;
+      default: return <VerticalTemplate {...templateProps} />;
     }
   };
 

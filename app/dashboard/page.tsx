@@ -162,7 +162,58 @@ export default function DashboardPage() {
           <p style={{ fontSize: '14px', color: 'var(--text-dim)', lineHeight: '1.6', marginBottom: '24px' }}>
             Tu plataforma está operando con la última tecnología de EduNexus para garantizar el mejor rendimiento.
           </p>
-          <button className="btn-premium" style={{ width: '100%', background: 'var(--primary)' }}>Contactar Soporte</button>
+          <button 
+            className="btn-premium" 
+            style={{ width: '100%', background: 'var(--primary)', marginBottom: '12px' }}
+            onClick={() => alert('Soporte técnico contactado. Nos comunicaremos pronto.')}
+          >
+            Contactar Soporte
+          </button>
+          
+          <button 
+            className="btn-premium" 
+            style={{ 
+              width: '100%', 
+              background: '#ef4444', 
+              color: 'white',
+              border: 'none',
+              padding: '12px',
+              borderRadius: '12px',
+              fontWeight: '800',
+              fontSize: '13px',
+              cursor: 'pointer'
+            }}
+            onClick={async () => {
+              if (confirm('¿ESTÁ SEGURO? Esta acción ELIMINARÁ PERMANENTEMENTE todos los registros de Estudiantes, Docentes y Familiares para limpiar datos de prueba. Esta acción no se puede deshacer.')) {
+                try {
+                  // 1. Clear Firestore
+                  const collections = ['students', 'teachers', 'family', 'participants', 'codebtors'];
+                  for (const col of collections) {
+                    const items = await getDashboardStats(); // Trigger a re-fetch check or use list
+                    const list = await (await import('@/lib/db')).db.list<any>(col as any);
+                    for (const item of list) {
+                      await (await import('@/lib/db')).db.delete(col as any, item.id);
+                    }
+                  }
+                  
+                  // 2. Clear LocalStorage
+                  Object.keys(localStorage).forEach(key => {
+                    if (key.includes('edunexus_')) {
+                      localStorage.removeItem(key);
+                    }
+                  });
+                  
+                  alert('✅ Sistema limpiado exitosamente. La página se recargará.');
+                  window.location.reload();
+                } catch (err) {
+                  console.error(err);
+                  alert('Error durante la limpieza. Algunos datos pueden persistir.');
+                }
+              }
+            }}
+          >
+            Limpiar Datos de Prueba
+          </button>
         </div>
       </div>
     </DashboardLayout>

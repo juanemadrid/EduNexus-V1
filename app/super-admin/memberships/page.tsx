@@ -11,7 +11,8 @@ import {
   Clock,
   ShieldCheck,
   ShieldX,
-  History
+  History,
+  X
 } from 'lucide-react';
 import { db } from '@/lib/db';
 
@@ -19,9 +20,13 @@ export default function MembershipsPage() {
   const [tenants, setTenants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const fetchTenants = async () => {
     try {
+      // Enforce master db context before fetching
+      sessionStorage.removeItem('edunexus_tenant_config');
+      localStorage.removeItem('edunexus_tenant');
       const data = await db.list<any>('tenants');
       setTenants(data);
     } catch (error) {
@@ -73,7 +78,9 @@ export default function MembershipsPage() {
           <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#1e293b', margin: 0, letterSpacing: '-1px' }}>Control de Membresías</h1>
           <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Gestión de suscripciones, pagos y vigencias SaaS</p>
         </div>
-        <button className="btn-premium" style={{ background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', border: 'none' }}>
+        <button 
+          onClick={() => setIsHistoryOpen(true)}
+          className="btn-premium" style={{ background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', border: 'none' }}>
            <History size={18} /> Ver Historial Global
         </button>
       </div>
@@ -175,6 +182,50 @@ export default function MembershipsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Global History Modal */}
+      {isHistoryOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+          <div className="glass-panel" style={{ background: 'white', borderRadius: '24px', width: '90%', maxWidth: '600px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', position: 'relative' }}>
+            <button 
+              onClick={() => setIsHistoryOpen(false)}
+              style={{ position: 'absolute', top: '24px', right: '24px', background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}
+            >
+              <X size={16} />
+            </button>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+              <div style={{ background: '#eff6ff', padding: '12px', borderRadius: '12px', color: '#3b82f6' }}>
+                <History size={24} />
+              </div>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#1e293b' }}>Historial Global</h2>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b', marginTop: '2px' }}>Registro de actividad reciente de membresías</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
+              {[
+                { type: 'activation', tenant: 'Colegio Nuevo Horizonte', desc: 'Suscripción activada', date: 'Hace 2 horas', icon: ShieldCheck, color: '#10b981', bg: '#dcfce7' },
+                { type: 'extension', tenant: 'Liceo Comercial del Norte', desc: 'Vigencia extendida por 30 días', date: 'Ayer, 14:30', icon: Clock, color: '#3b82f6', bg: '#eff6ff' },
+                { type: 'suspension', tenant: 'Instituto de Innovación', desc: 'Acceso suspendido temporalmente', date: 'Hace 3 días', icon: ShieldX, color: '#ef4444', bg: '#fee2e2' },
+                { type: 'activation', tenant: 'Colegio Santa María', desc: 'Cambio a plan Venta Vitalicia', date: 'Hace 5 días', icon: CreditCard, color: '#8b5cf6', bg: '#f3e8ff' }
+              ].map((log, i) => (
+                <div key={i} style={{ display: 'flex', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '16px', alignItems: 'flex-start' }}>
+                  <div style={{ background: log.bg, color: log.color, padding: '10px', borderRadius: '12px' }}>
+                    <log.icon size={18} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{log.tenant}</p>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b', marginTop: '2px' }}>{log.desc}</p>
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: '#94a3b8' }}>{log.date}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

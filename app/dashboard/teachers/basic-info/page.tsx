@@ -84,18 +84,7 @@ function TeacherBasicInfoContent() {
       if (needsUpdate) localStorage.setItem('edunexus_registered_teachers', JSON.stringify(migrated));
       setLocalTeachers(migrated);
     } else {
-      const seedData = [
-        { id: '92532758', name: 'CONTRERAS ALTAMIRANDA DONALDO MANUEL', type: 'Docente', isActive: true },
-        { id: '1102833236', name: 'HERNANDEZ ARENA MARIA DEL CARMEN', type: 'Docente', isActive: true },
-        { id: '1102794538', name: 'LADRUS ACOSTA LEVER FABIAN', type: 'Docente', isActive: true },
-        { id: '1102845230', name: 'MARTINEZ BARROS JESUS ALBERTO', type: 'Docente', isActive: true },
-        { id: '1102864522', name: 'MARTINEZ REDONDO BRAYAN ALEXANDER', type: 'Docente', isActive: true },
-        { id: '1102863468', name: 'MERLANO GUTIERREZ SAMIR', type: 'Docente', isActive: true },
-        { id: '1102809142', name: 'RIZO MARTINEZ STER', type: 'Docente', isActive: true },
-        { id: '1101739472', name: 'SAMPAIO SIERRA GRACIELA MARGARITA', type: 'Docente', isActive: true },
-      ];
-      localStorage.setItem('edunexus_registered_teachers', JSON.stringify(seedData));
-      setLocalTeachers(seedData);
+      setLocalTeachers([]);
     }
   }, []);
 
@@ -224,7 +213,7 @@ function TeacherBasicInfoContent() {
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#334155', fontWeight: '500' }}>{t.id}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#64748b' }}>{t.type || 'Docente'}</td>
                   <td style={{ padding: '14px 24px', textAlign: 'center' }}>
-                    <Link href={`/dashboard/institutional/teachers/profile/${t.id}`}>
+                    <Link href={`/dashboard/teachers/profile/${t.id}`}>
                       <button title="Ver detalles" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
                         <Eye size={20} />
                       </button>

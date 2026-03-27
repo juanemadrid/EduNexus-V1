@@ -195,7 +195,7 @@ export default function TeacherProfileView() {
           <ArrowLeft size={18} /> Volver al listado
         </button>
         <Link
-          href="/dashboard/institutional/teachers/register"
+          href="/dashboard/teachers/register"
           className="btn-premium"
           style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', fontSize: '14px', background: 'var(--primary)', textDecoration: 'none', color: 'white', borderRadius: '10px', fontWeight: '700' }}
         >

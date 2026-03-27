@@ -108,21 +108,24 @@ export default function InstitutionsManagement() {
   };
 
   const handleRemoteLogin = (inst: any) => {
-    // 1. Store Institutional Config Safely (Use Master if RENTAL with empty config)
-    const configToStore = inst.type === 'RENTAL' ? defaultFirebaseConfig : inst.firebaseConfig;
+    // 1. Config Firebase: RENTAL usa la BD compartida (master), SALE usa su propia BD
+    const configToStore = (inst.type === 'RENTAL' || !inst.firebaseConfig?.projectId)
+      ? defaultFirebaseConfig
+      : inst.firebaseConfig;
     sessionStorage.setItem('edunexus_tenant_config', JSON.stringify(configToStore));
     
-    // 2. Store Fake Admin User
+    // 2. Guardar usuario con contexto completo del tenant
     localStorage.setItem('edunexus_user', JSON.stringify({ 
       email: inst.adminEmail || `admin@${inst.slug}.com`, 
       role: 'ADMIN', 
       name: `Admin - ${inst.name}`,
       tenantId: inst.id,
       tenantName: inst.name,
+      tenantType: inst.type || 'RENTAL',  // CRÍTICO: necesario para el aislamiento de colecciones
       isRemote: true
     }));
 
-    // 3. Redirect
+    // 3. Redirigir al dashboard de la institución
     window.location.href = '/dashboard';
   };
 
@@ -145,14 +148,16 @@ export default function InstitutionsManagement() {
     });
   };
 
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
   const deleteInstitution = async (id: string) => {
-    if (confirm('¿Estás seguro de eliminar esta institución? Todos sus datos configurados se perderán.')) {
-      try {
-        await db.delete('tenants', id);
-        await fetchInstitutions();
-      } catch (error) {
-        console.error("Error deleting institution:", error);
-      }
+    try {
+      await db.delete('tenants', id, defaultFirebaseConfig);
+      setConfirmDelete(null);
+      await fetchInstitutions();
+    } catch (error) {
+      console.error("Error deleting institution:", error);
+      alert("Error al eliminar la institución. Verifique la consola.");
     }
   };
 
@@ -190,7 +195,7 @@ export default function InstitutionsManagement() {
         {institutions.filter(inst => inst.name.toLowerCase().includes(searchTerm.toLowerCase())).map((inst) => (
           <motion.div 
             layout
-            key={inst.id}
+            key={inst._docId || inst.id}
             className="glass-panel"
             style={{ padding: '24px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '24px', position: 'relative' }}
           >
@@ -202,9 +207,9 @@ export default function InstitutionsManagement() {
                   <button onClick={() => { setEditingInst(inst); setFormData(inst); setIsModalOpen(true); }} style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#f1f5f9', cursor: 'pointer' }}>
                      <Edit2 size={14} color="#64748b" />
                   </button>
-                  <button onClick={() => deleteInstitution(inst.id)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#fee2e2', cursor: 'pointer' }}>
-                     <Trash2 size={14} color="#ef4444" />
-                  </button>
+                   <button onClick={(e) => { e.stopPropagation(); setConfirmDelete(inst._docId || inst.id); }} style={{ width: '32px', height: '32px', borderRadius: '8px', border: 'none', background: '#fee2e2', cursor: 'pointer' }}>
+                      <Trash2 size={14} color="#ef4444" />
+                   </button>
                </div>
             </div>
 
@@ -223,9 +228,11 @@ export default function InstitutionsManagement() {
             </div>
 
             <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: inst.firebaseConfig?.projectId ? '#059669' : '#ef4444' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: inst.firebaseConfig?.projectId ? '#059669' : inst.type === 'RENTAL' ? '#3b82f6' : '#ef4444' }}>
                   <Database size={14} />
-                  <span style={{ fontSize: '11px', fontWeight: '800' }}>{inst.firebaseConfig?.projectId ? 'FIREBASE CONECTADO' : 'SIN CONFIGURACIÓN'}</span>
+                  <span style={{ fontSize: '11px', fontWeight: '800' }}>
+                    {inst.firebaseConfig?.projectId ? 'FIREBASE PROPIO' : inst.type === 'RENTAL' ? 'BD COMPARTIDA ✓' : 'SIN CONFIGURACIÓN'}
+                  </span>
                </div>
                 <button 
                   onClick={() => handleRemoteLogin(inst)}
@@ -380,6 +387,23 @@ export default function InstitutionsManagement() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* ── Modal de confirmación de eliminación ── */}
+      {confirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'white', borderRadius: '20px', padding: '36px', maxWidth: '420px', width: '90%', boxShadow: '0 30px 60px -10px rgba(0,0,0,0.3)', textAlign: 'center' }}>
+            <div style={{ width: '60px', height: '60px', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+              <Trash2 size={28} color="#ef4444" />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#111827', margin: '0 0 10px' }}>¿Eliminar institución?</h3>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 28px' }}>Esta acción es permanente y no se puede deshacer.</p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button onClick={() => setConfirmDelete(null)} style={{ padding: '10px 24px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}>Cancelar</button>
+              <button onClick={() => deleteInstitution(confirmDelete)} style={{ padding: '10px 24px', borderRadius: '10px', border: 'none', background: '#ef4444', color: 'white', fontWeight: '800', cursor: 'pointer', fontSize: '14px' }}>Sí, eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         .glass-panel { transition: 0.3s ease; }

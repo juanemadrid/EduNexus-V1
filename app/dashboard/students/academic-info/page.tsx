@@ -39,7 +39,7 @@ export default function AcademicInfoPage() {
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <Link 
-            href="/dashboard/institutional/students/register"
+            href="/dashboard/students/register"
             className="btn-premium" 
             style={{ background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}
           >

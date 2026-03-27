@@ -81,6 +81,96 @@ export default function AdminProfileView() {
 
   const admin = localAdmins.find(p => p.id === adminId) || localAdmins[0];
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableData, setEditableData] = useState<any>({
+    primerNombre: '',
+    segundoNombre: '',
+    primerApellido: '',
+    segundoApellido: '',
+    sexo: '',
+    telefono: '',
+    celular: '',
+    correo: '',
+    direccion: '',
+    residence: '',
+    barrio: '',
+    fechaNacimiento: '',
+    lugarNacimiento: '',
+    lugarExpedicion: '',
+    fechaExpedicion: '',
+    sangre: '',
+    estadoCivil: '',
+    escalafon: '',
+    nivelAcademico: '',
+    especialidad: '',
+    calidadDesempeno: '',
+    tiempoLaboral: '',
+    fechaIngreso: '',
+    fechaRetiro: '',
+    tipoVinculacion: '',
+    origenVinculacion: '',
+    fuenteRecursos: '',
+    salario: '',
+    cargo: ''
+  });
+
+  useEffect(() => {
+    if (admin) {
+      setEditableData({
+        primerNombre: admin.details?.primerNombre || '',
+        segundoNombre: admin.details?.segundoNombre || '',
+        primerApellido: admin.details?.primerApellido || '',
+        segundoApellido: admin.details?.segundoApellido || '',
+        sexo: admin.details?.sexo || '',
+        telefono: admin.details?.telefono || '',
+        celular: admin.details?.celular || '',
+        correo: admin.correo || '',
+        direccion: admin.details?.direccion || '',
+        residence: admin.details?.residence || '',
+        barrio: admin.details?.barrio || '',
+        fechaNacimiento: admin.details?.fechaNacimiento || '',
+        lugarNacimiento: admin.details?.lugarNacimiento || '',
+        lugarExpedicion: admin.details?.lugarExpedicion || '',
+        fechaExpedicion: admin.details?.fechaExpedicion || '',
+        sangre: admin.details?.sangre || '',
+        estadoCivil: admin.details?.estadoCivil || '',
+        escalafon: admin.details?.escalafon || '',
+        nivelAcademico: admin.details?.nivelAcademico || '',
+        especialidad: admin.details?.especialidad || '',
+        calidadDesempeno: admin.details?.calidadDesempeno || '',
+        tiempoLaboral: admin.details?.tiempoLaboral || '',
+        fechaIngreso: admin.details?.fechaIngreso || '',
+        fechaRetiro: admin.details?.fechaRetiro || '',
+        tipoVinculacion: admin.details?.tipoVinculacion || '',
+        origenVinculacion: admin.details?.origenVinculacion || '',
+        fuenteRecursos: admin.details?.fuenteRecursos || '',
+        salario: admin.details?.salario || '',
+        cargo: admin.details?.cargo || ''
+      });
+    }
+  }, [admin]);
+
+  const handleSave = () => {
+    const saved = localStorage.getItem('edunexus_registered_admins');
+    if (!saved) return;
+    const admins = JSON.parse(saved);
+    const updated = admins.map((a: any) =>
+      a.id === adminId ? { 
+        ...a, 
+        name: `${editableData.primerNombre} ${editableData.segundoNombre} ${editableData.primerApellido} ${editableData.segundoApellido}`.replace(/\s+/g, ' ').trim(),
+        correo: editableData.correo,
+        details: { ...a.details, ...editableData } 
+      } : a
+    );
+    localStorage.setItem('edunexus_registered_admins', JSON.stringify(updated));
+    setLocalAdmins(updated);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+  };
+
   if (!admin) {
     return (
       <DashboardLayout>
@@ -136,10 +226,20 @@ export default function AdminProfileView() {
     </button>
   );
 
-  const LabelValue = ({ label, value }: { label: string, value: string }) => (
+  const LabelValue = ({ label, value, field }: { label: string, value: string, field?: string }) => (
     <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', padding: '10px 0', borderBottom: '1px solid #f8fafc', alignItems: 'center' }}>
       <span style={{ fontSize: '13px', color: '#94a3b8', fontWeight: '600', textAlign: 'right', paddingRight: '20px', textTransform: 'uppercase' }}>{label}:</span>
-      <span style={{ fontSize: '13px', color: '#334155', fontWeight: '750' }}>{value || ''}</span>
+      {isEditing && field ? (
+        <input 
+          type="text"
+          value={value}
+          onChange={(e) => setEditableData((prev: any) => ({ ...prev, [field]: e.target.value }))}
+          className="input-premium"
+          style={{ padding: '4px 8px', fontSize: '13px', width: '100%', background: 'white' }}
+        />
+      ) : (
+        <span style={{ fontSize: '13px', color: '#334155', fontWeight: '750' }}>{value || ''}</span>
+      )}
     </div>
   );
 
@@ -278,52 +378,67 @@ export default function AdminProfileView() {
                <h3 style={{ fontSize: '16px', fontWeight: '900', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <ChevronDown size={20} color="var(--primary)" /> INFORMACIÓN PERSONAL
                </h3>
-               <button style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Edit size={14} /> Editar información personal
-               </button>
+               {!isEditing ? (
+                 <button 
+                   onClick={() => setIsEditing(true)}
+                   style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                 >
+                    <Edit size={14} /> Editar información personal
+                 </button>
+               ) : (
+                 <div style={{ display: 'flex', gap: '10px' }}>
+                   <button onClick={handleSave} className="btn-premium" style={{ padding: '6px 16px', fontSize: '12px' }}>Guardar</button>
+                   <button onClick={handleCancel} className="btn-secondary" style={{ padding: '6px 16px', fontSize: '12px' }}>Cancelar</button>
+                 </div>
+               )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0 60px', marginBottom: '40px' }}>
-               <LabelValue label="Nombres" value={((admin.details?.primerNombre || '') + ' ' + (admin.details?.segundoNombre || '')).trim().toLowerCase()} />
-               <LabelValue label="Apellidos" value={((admin.details?.primerApellido || '') + ' ' + (admin.details?.segundoApellido || '')).trim().toLowerCase()} />
+               <LabelValue label="Nombres" value={editableData.primerNombre + ' ' + editableData.segundoNombre} field="primerNombre" />
+               <LabelValue label="Apellidos" value={editableData.primerApellido + ' ' + editableData.segundoApellido} field="primerApellido" />
                <LabelValue label="Identificación" value={`${admin.details?.tipoId || 'C.C.'} ${admin.id}`} />
-               <LabelValue label="Sexo" value={admin.details?.sexo || ''} />
-               <LabelValue label="Teléfono" value={admin.details?.telefono || ''} />
-               <LabelValue label="Celular" value={admin.details?.celular || ''} />
-               <LabelValue label="Correo electrónico" value={admin.correo || ''} />
-               <LabelValue label="Dirección" value={admin.details?.direccion || ''} />
-               <LabelValue label="Lugar de residencia" value={admin.details?.residence || ''} />
-               <LabelValue label="Barrio" value={admin.details?.barrio || ''} />
-               <LabelValue label="Fecha de nacimiento" value={admin.details?.fechaNacimiento || ''} />
-               <LabelValue label="Lugar de nacimiento" value={admin.details?.lugarNacimiento || ''} />
+               <LabelValue label="Sexo" value={editableData.sexo} field="sexo" />
+               <LabelValue label="Teléfono" value={editableData.telefono} field="telefono" />
+               <LabelValue label="Celular" value={editableData.celular} field="celular" />
+               <LabelValue label="Correo electrónico" value={editableData.correo} field="correo" />
+               <LabelValue label="Dirección" value={editableData.direccion} field="direccion" />
+               <LabelValue label="Lugar de residencia" value={editableData.residence} field="residence" />
+               <LabelValue label="Barrio" value={editableData.barrio} field="barrio" />
+               <LabelValue label="Fecha de nacimiento" value={editableData.fechaNacimiento} field="fechaNacimiento" />
+               <LabelValue label="Lugar de nacimiento" value={editableData.lugarNacimiento} field="lugarNacimiento" />
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginTop: '20px' }}>
                <h3 style={{ fontSize: '16px', fontWeight: '900', color: '#334155', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <ChevronDown size={20} color="var(--primary)" /> INFORMACIÓN ADICIONAL
                </h3>
-               <button style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Edit size={14} /> Editar
-               </button>
+               {!isEditing && (
+                 <button 
+                  onClick={() => setIsEditing(true)}
+                  style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                 >
+                    <Edit size={14} /> Editar
+                 </button>
+               )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0 60px' }}>
-               <LabelValue label="Lugar de expedición" value="" />
-               <LabelValue label="Fecha de expedición" value="" />
-               <LabelValue label="Tipo de sangre" value="" />
-               <LabelValue label="Estado civil" value="" />
-               <LabelValue label="Escalafón" value="" />
-               <LabelValue label="Nivel académico" value="" />
-               <LabelValue label="Especialidad" value="" />
-               <LabelValue label="Calidad de desempeño" value="" />
-               <LabelValue label="Tiempo laboral" value="" />
-               <LabelValue label="Fecha de ingreso" value="" />
-               <LabelValue label="Fecha de retiro" value="" />
-               <LabelValue label="Tipo de vinculación" value="" />
-               <LabelValue label="Origen vinculación" value="" />
-               <LabelValue label="Fuente de recursos" value="" />
-               <LabelValue label="Salario" value="" />
-               <LabelValue label="Cargo" value="" />
+               <LabelValue label="Lugar de expedición" value={editableData.lugarExpedicion} field="lugarExpedicion" />
+               <LabelValue label="Fecha de expedición" value={editableData.fechaExpedicion} field="fechaExpedicion" />
+               <LabelValue label="Tipo de sangre" value={editableData.sangre} field="sangre" />
+               <LabelValue label="Estado civil" value={editableData.estadoCivil} field="estadoCivil" />
+               <LabelValue label="Escalafón" value={editableData.escalafon} field="escalafon" />
+               <LabelValue label="Nivel académico" value={editableData.nivelAcademico} field="nivelAcademico" />
+               <LabelValue label="Especialidad" value={editableData.especialidad} field="especialidad" />
+               <LabelValue label="Calidad de desempeño" value={editableData.calidadDesempeno} field="calidadDesempeno" />
+               <LabelValue label="Tiempo laboral" value={editableData.tiempoLaboral} field="tiempoLaboral" />
+               <LabelValue label="Fecha de ingreso" value={editableData.fechaIngreso} field="fechaIngreso" />
+               <LabelValue label="Fecha de retiro" value={editableData.fechaRetiro} field="fechaRetiro" />
+               <LabelValue label="Tipo de vinculación" value={editableData.tipoVinculacion} field="tipoVinculacion" />
+               <LabelValue label="Origen vinculación" value={editableData.origenVinculacion} field="origenVinculacion" />
+               <LabelValue label="Fuente de recursos" value={editableData.fuenteRecursos} field="fuenteRecursos" />
+               <LabelValue label="Salario" value={editableData.salario} field="salario" />
+               <LabelValue label="Cargo" value={editableData.cargo} field="cargo" />
             </div>
           </>
         )}

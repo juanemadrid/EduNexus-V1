@@ -6,7 +6,7 @@ export default function TeachersRedirect() {
   const router = useRouter();
   
   useEffect(() => {
-    router.replace('/dashboard/institutional/teachers/basic-info');
+    router.replace('/dashboard/teachers/basic-info');
   }, [router]);
 
   return (

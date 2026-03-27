@@ -13,6 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
+      <head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Montserrat:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Outfit:wght@400;700;900&family=Space+Grotesk:wght@400;700;900&display=swap" rel="stylesheet" />
+      </head>
       <body>
         <div className="aurora-container">
           <div className="background-image"></div>

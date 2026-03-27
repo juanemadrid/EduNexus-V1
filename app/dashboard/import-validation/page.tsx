@@ -88,7 +88,7 @@ function ImportValidationContent() {
 
     setTimeout(() => {
       setIsImporting(false);
-      router.push(`/dashboard/institutional/${type}/basic-info`);
+      router.push(`/dashboard/${type}/basic-info`);
     }, 2000);
   };
 
