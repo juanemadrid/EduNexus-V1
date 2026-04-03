@@ -4,21 +4,9 @@ import DateRangePicker from '@/components/DateRangePicker';
 import { Search, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, ChevronDown, BarChart3 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { db } from '@/lib/db';
 
-const INITIAL_SUBJECTS = [
-  { id: '1', codigo: '96', nombre: 'ACTIVIDADES, RECREO DEPORTIVAS Y ACUATICAS', abreviacion: 'ARDA', estado: 'Activa' },
-  { id: '2', codigo: '21 AMC', nombre: 'ADM. DE MEDICAMENTOS Y CARDEX', abreviacion: 'ADMON MED', estado: 'Activa' },
-  { id: '3', codigo: '101', nombre: 'ADMINISTRACION, ORGANIZACION Y DECORACION DE EVENTOS RECREATIVOS Y DEPORTIVOS', abreviacion: 'AODERD', estado: 'Activa' },
-  { id: '4', codigo: '26 ADM', nombre: 'ADMINISTRACION DE MEDICAMENTOS', abreviacion: 'ADMON MED', estado: 'Activa' },
-  { id: '5', codigo: '06ADM', nombre: 'ADMISION AL USUARIO', abreviacion: 'ADM USUA', estado: 'Activa' },
-  { id: '6', codigo: '44', nombre: 'AFILIACION EN L SISTEMA DE SALUD', abreviacion: 'ASD', estado: 'Activa' },
-  { id: '7', codigo: '49', nombre: 'AFILIACION EN L SISTEMA DE SALUD, PENSION, ARL Y PREPAG DEL REGIEMN CONTR Y SUBS', abreviacion: 'ASPPAPRCS', estado: 'Activa' },
-  { id: '8', codigo: '150', nombre: 'ANATOMIA Y FISIOLOGIA A IMAL', abreviacion: 'AFI', estado: 'Activa' },
-  { id: '9', codigo: '14 ANAT', nombre: 'ANATOMIA Y FISIOLOGIA DEL PACIENTE', abreviacion: 'FISIO PAC', estado: 'Activa' },
-  { id: '10', codigo: '07ATEN', nombre: 'ATENCION Y SERVICIO AL CLIENTE', abreviacion: 'ATEN CLIEN', estado: 'Activa' },
-  { id: '11', codigo: '67', nombre: 'ATENCION Y SERVICIO AL CLIENTE', abreviacion: 'ASC', estado: 'Activa' },
-  { id: '12', codigo: '153', nombre: 'BASES DE DATOS', abreviacion: 'BD', estado: 'Activa' },
-];
+/* Removed INITIAL_SUBJECTS mock data */
 
 export default function SubjectsPage() {
   const router = useRouter();
@@ -47,35 +35,28 @@ export default function SubjectsPage() {
     estado: 'Activa'
   });
 
+  const fetchSubjects = async () => {
+    const data = await db.list('academic_subjects');
+    setSubjects(data);
+  };
+
   useEffect(() => {
-    const saved = localStorage.getItem('edunexus_academic_subjects');
-    if (saved) {
-      setSubjects(JSON.parse(saved));
-    } else {
-      localStorage.setItem('edunexus_academic_subjects', JSON.stringify(INITIAL_SUBJECTS));
-      setSubjects(INITIAL_SUBJECTS);
-    }
+    fetchSubjects();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.codigo || !form.nombre || !form.abreviacion) {
       alert('Por favor complete todos los campos obligatorios (*)');
       return;
     }
 
-    let updated;
     if (isEditing && editingId) {
-      updated = subjects.map(s => s.id === editingId ? { ...s, ...form } : s);
+      await db.update('academic_subjects', editingId, form);
     } else {
-      const newSubject = {
-        id: Date.now().toString(),
-        ...form
-      };
-      updated = [newSubject, ...subjects];
+      await db.create('academic_subjects', form);
     }
 
-    setSubjects(updated);
-    localStorage.setItem('edunexus_academic_subjects', JSON.stringify(updated));
+    await fetchSubjects(); // Refresh subjects after save
     setShowModal(false);
     setIsEditing(false);
     setEditingId(null);
@@ -99,11 +80,11 @@ export default function SubjectsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (editingId) {
-      const updated = subjects.filter(s => s.id !== editingId);
-      setSubjects(updated);
-      localStorage.setItem('edunexus_academic_subjects', JSON.stringify(updated));
+      await db.delete('academic_subjects', editingId);
+      const fresh = await db.list('academic_subjects');
+      setSubjects(fresh);
       setShowDeleteModal(false);
       setEditingId(null);
     }

@@ -2,19 +2,10 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Search, Eye, ChevronRight, ChevronLeft, Plus, X, Edit, Trash2, Download, FileText, Filter, ChevronDown, HelpCircle, Calendar, BookOpen, Settings } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
+import { db } from '@/lib/db';
 
-const INITIAL_PROGRAMS = [
-  { id: '1', codigo: '01 ADS', nombre: 'AUXILIAR DE ADMINISTRACION EN SALUD', estado: 'Activo' },
-  { id: '2', codigo: '03 ADS', nombre: 'AUXILIAR DE ADMINISTRACION EN SALUD', estado: 'Activo' },
-  { id: '3', codigo: '02 ADS', nombre: 'AUXILIAR DE ADMINISTRACION EN SALUD', estado: 'Activo' },
-  { id: '4', codigo: '03 AENFER *', nombre: 'AUXILIAR DE ENFERMERIA', estado: 'Activo' },
-  { id: '5', codigo: '01 AENFER', nombre: 'AUXILIAR DE ENFERMERIA', estado: 'Activo' },
-  { id: '6', codigo: '01A', nombre: 'AUXILIAR DE ENFERMERIA', estado: 'Activo' },
-  { id: '102', nombre: 'TECNICO EN AIRES ACONDICIONADO Y REFRIGERACION', estado: 'Activo' },
-  { id: '8', codigo: '02 ADMCONT', nombre: 'TECNICO AUXILIAR CONTABLE Y ADMINISTRATIVO', estado: 'Activo' },
-  { id: '9', codigo: '01 ADMCONT', nombre: 'TECNICO AUXILIAR CONTABLE Y ADMINISTRATIVO', estado: 'Activo' },
-  { id: '10', codigo: '07 ADMCONT', nombre: 'TECNICO AUXILIAR CONTABLE Y ADMINISTRATIVO', estado: 'Activo' },
-];
+/* Removed INITIAL_PROGRAMS mock data */
 
 export default function ProgramsPage() {
   const [programs, setPrograms] = useState<any[]>([]);
@@ -28,7 +19,16 @@ export default function ProgramsPage() {
   const itemsPerPage = 10;
   const [activeTab, setActiveTab] = useState<'general' | 'pensum'>('general');
   const [availableSubjects, setAvailableSubjects] = useState<any[]>([]);
+  const [programCategories, setProgramCategories] = useState<any[]>([]);
   const [showAssignSubject, setShowAssignSubject] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [showNoResultsModal, setShowNoResultsModal] = useState(false);
+  const [includeInactive, setIncludeInactive] = useState(false);
+  const [filters, setFilters] = useState({
+    categoriaId: '',
+    estado: '',
+    tipoEvaluacion: ''
+  });
   
   // New subject assignment state
   const [newAssignment, setNewAssignment] = useState({
@@ -43,7 +43,7 @@ export default function ProgramsPage() {
   const [form, setForm] = useState({
     codigo: '',
     nombre: '',
-    nombreQ10Id: '',
+    tituloOtorgado: '',
     resAutorizacion: '',
     fechaRes: '',
     preinscripciones: 'No',
@@ -58,41 +58,34 @@ export default function ProgramsPage() {
     pensumSubjects: [] as any[]
   });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('edunexus_academic_programs');
-    if (saved) {
-      setPrograms(JSON.parse(saved));
-    } else {
-      localStorage.setItem('edunexus_academic_programs', JSON.stringify(INITIAL_PROGRAMS));
-      setPrograms(INITIAL_PROGRAMS);
-    }
+  const fetchPrograms = async () => {
+    const data = await db.list('academic_programs');
+    setPrograms(data);
+  };
 
-    // Load subjects for assignment
-    const savedSubjects = localStorage.getItem('edunexus_academic_subjects');
-    if (savedSubjects) {
-      setAvailableSubjects(JSON.parse(savedSubjects));
-    }
+  useEffect(() => {
+    fetchPrograms();
+    db.list('academic_subjects').then((data: any[]) => {
+      setAvailableSubjects(data);
+    });
+    db.list('academic_program_categories').then((data: any[]) => {
+      setProgramCategories(data || []);
+    });
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.codigo || !form.nombre || !form.tipoEvaluacion || !form.categoria) {
       alert('Por favor complete todos los campos obligatorios (*)');
       return;
     }
 
-    let updated;
     if (isEditing && editingId) {
-      updated = programs.map(p => p.id === editingId ? { ...p, ...form } : p);
+      await db.update('academic_programs', editingId, form);
     } else {
-      const newProgram = {
-        id: Date.now().toString(),
-        ...form
-      };
-      updated = [newProgram, ...programs];
+      await db.create('academic_programs', form);
     }
 
-    setPrograms(updated);
-    localStorage.setItem('edunexus_academic_programs', JSON.stringify(updated));
+    await fetchPrograms(); // Refresh programs after save
     closeModal();
   };
 
@@ -103,7 +96,7 @@ export default function ProgramsPage() {
     setForm({
       codigo: '',
       nombre: '',
-      nombreQ10Id: '',
+      tituloOtorgado: '',
       resAutorizacion: '',
       fechaRes: '',
       preinscripciones: 'No',
@@ -123,7 +116,7 @@ export default function ProgramsPage() {
     setForm({
       codigo: program.codigo || '',
       nombre: program.nombre || '',
-      nombreQ10Id: program.nombreQ10Id || '',
+      tituloOtorgado: program.tituloOtorgado || '',
       resAutorizacion: program.resAutorizacion || '',
       fechaRes: program.fechaRes || '',
       preinscripciones: program.preinscripciones || 'No',
@@ -186,20 +179,68 @@ export default function ProgramsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (editingId) {
-      const updated = programs.filter(p => p.id !== editingId);
-      setPrograms(updated);
-      localStorage.setItem('edunexus_academic_programs', JSON.stringify(updated));
+      await db.delete('academic_programs', editingId);
+      await fetchPrograms(); // Refresh programs after save
       setShowDeleteModal(false);
       setEditingId(null);
     }
   };
 
-  const filteredPrograms = programs.filter(p => 
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.codigo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      if (filteredPrograms.length === 0) {
+        setIsExporting(false);
+        setShowNoResultsModal(true);
+        return;
+      }
+      
+      const headers = ['Código', 'Nombre', 'Título Otorgado', 'Tipo Evaluación', 'Categoría', 'Estado'];
+      const rowData = filteredPrograms.map((p: any) => [
+        p.codigo || '',
+        p.nombre || '',
+        p.tituloOtorgado || '',
+        p.tipoEvaluacion || '',
+        programCategories.find(c => c.id === p.categoria)?.name || p.categoria || '',
+        p.estado || ''
+      ]);
+      
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rowData]);
+      ws['!cols'] = [
+        { wch: 15 }, // Código
+        { wch: 40 }, // Nombre
+        { wch: 30 }, // Título
+        { wch: 20 }, // Tipo Evaluación
+        { wch: 25 }, // Categoría
+        { wch: 15 }, // Estado
+      ];
+      
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Programas");
+      XLSX.writeFile(wb, `Listado_Programas_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error('Error exportando Excel', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const filteredPrograms = programs.filter(p => {
+    const matchSearch = p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        p.codigo.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchSearch) return false;
+    
+    // Default: exclude inactive programs unless includeInactive is true
+    if (!includeInactive && p.estado === 'Inactivo') return false;
+    
+    if (filters.categoriaId && p.categoria !== filters.categoriaId) return false;
+    if (filters.estado && p.estado !== filters.estado) return false;
+    if (filters.tipoEvaluacion && p.tipoEvaluacion !== filters.tipoEvaluacion) return false;
+    
+    return true;
+  });
 
   const totalPages = Math.ceil(filteredPrograms.length / itemsPerPage);
   const currentItems = filteredPrograms.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -242,8 +283,13 @@ export default function ProgramsPage() {
             <button className="btn-premium" style={{ height: '48px', padding: '0 24px', background: 'var(--primary)', color: 'white' }}>
               <Search size={18} />
             </button>
-            <button className="btn-premium" style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none' }}>
-              <Download size={18} /> Exportar
+            <button 
+              className="btn-premium" 
+              style={{ height: '48px', padding: '0 20px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', boxShadow: 'none', display: 'flex', alignItems: 'center', gap: '8px', opacity: isExporting ? 0.7 : 1, cursor: isExporting ? 'wait' : 'pointer' }}
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              <Download size={18} /> {isExporting ? 'Exportando...' : 'Exportar'}
             </button>
             <button 
               onClick={() => setShowAdvanced(!showAdvanced)}
@@ -252,6 +298,79 @@ export default function ProgramsPage() {
               Búsqueda avanzada <ChevronDown size={14} style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
             </button>
           </div>
+
+          {showAdvanced && (
+            <div style={{ marginTop: '20px', padding: '20px 0 0 0', borderTop: '1px solid #f3f4f6' }}>
+              {/* Reference Checkbox */}
+              <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #f3f4f6' }}>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px', 
+                  cursor: 'pointer',
+                  padding: '12px 16px',
+                  background: '#f8fafc',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  width: 'fit-content'
+                }}>
+                  <input 
+                    type="checkbox" 
+                    checked={includeInactive} 
+                    onChange={e => setIncludeInactive(e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                  />
+                  <span style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>
+                    ¿Incluir programas inactivos?
+                  </span>
+                </label>
+              </div>
+
+              {/* Advanced Grids */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '6px' }}>Categoría</label>
+                  <select 
+                    className="input-premium" 
+                    style={{ width: '100%', height: '42px', fontSize: '13px' }} 
+                    value={filters.categoriaId} 
+                    onChange={e => { setFilters({...filters, categoriaId: e.target.value}); setCurrentPage(1); }}
+                  >
+                    <option value="">Todas las categorías</option>
+                    {programCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '6px' }}>Estado Manual</label>
+                  <select 
+                    className="input-premium" 
+                    style={{ width: '100%', height: '42px', fontSize: '13px' }} 
+                    value={filters.estado} 
+                    onChange={e => { setFilters({...filters, estado: e.target.value}); setCurrentPage(1); }}
+                  >
+                    <option value="">Cualquier estado</option>
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '6px' }}>Tipo de Evaluación</label>
+                  <select 
+                    className="input-premium" 
+                    style={{ width: '100%', height: '42px', fontSize: '13px' }} 
+                    value={filters.tipoEvaluacion} 
+                    onChange={e => { setFilters({...filters, tipoEvaluacion: e.target.value}); setCurrentPage(1); }}
+                  >
+                    <option value="">Todos los tipos</option>
+                    <option value="Cuantitativo">Cuantitativo</option>
+                    <option value="Cualitativo">Cualitativo</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Programs Table */}
@@ -413,13 +532,14 @@ export default function ProgramsPage() {
                   </div>
                   <div>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>
-                      Nombre para Q10 ID <HelpCircle size={14} />
+                      Título otorgado <HelpCircle size={14} />
                     </label>
                     <input 
                       type="text" 
+                      placeholder="Ej: Bachiller Académico"
                       className="input-premium"
-                      value={form.nombreQ10Id}
-                      onChange={e => setForm({...form, nombreQ10Id: e.target.value})}
+                      value={form.tituloOtorgado}
+                      onChange={e => setForm({...form, tituloOtorgado: e.target.value})}
                     />
                   </div>
 
@@ -492,10 +612,9 @@ export default function ProgramsPage() {
                       onChange={e => setForm({...form, categoria: e.target.value})}
                     >
                       <option value="">Seleccione</option>
-                      <option value="Diplomado">Diplomado</option>
-                      <option value="Técnico">Técnico Laboral</option>
-                      <option value="Curso">Curso Corto</option>
-                      <option value="Bachillerato">Bachillerato</option>
+                      {programCategories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -628,6 +747,26 @@ export default function ProgramsPage() {
                 Aceptar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Results Modal */}
+      {showNoResultsModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="animate-fade" style={{ background: 'white', width: '380px', padding: '32px 24px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 20px 40px -15px rgba(0,0,0,0.1)' }}>
+             <X size={40} color="#ef4444" style={{ margin: '0 auto 12px', background: '#fee2e2', padding: '8px', borderRadius: '50%' }} />
+             <h2 style={{ margin: '0 0 12px', fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>Sin resultados</h2>
+             <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#64748b', lineHeight: '1.6' }}>
+               De acuerdo a los filtros seleccionados no se encontraron programas para exportar. Por favor verifique los filtros e inténtelo nuevamente.
+             </p>
+             <button 
+               className="btn-premium"
+               onClick={() => setShowNoResultsModal(false)}
+               style={{ background: '#22c55e', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', transition: '0.2s', width: '120px' }}
+             >
+               Aceptar
+             </button>
           </div>
         </div>
       )}

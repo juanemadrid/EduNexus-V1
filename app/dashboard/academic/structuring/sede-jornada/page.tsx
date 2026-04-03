@@ -2,6 +2,7 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, X, Edit, Trash2, Building2, Clock, BookOpen, ChevronDown, CheckSquare, Square } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
 const JORNADAS_DEFAULT = ['Mañana', 'Tarde', 'Noche', 'Sabatina', 'Dominical', 'Virtual'];
 
@@ -28,20 +29,30 @@ export default function SedeJornadaPage() {
   const [selectedProgramsToAssign, setSelectedProgramsToAssign] = useState<string[]>([]);
 
   useEffect(() => {
-    const savedSedes = localStorage.getItem('edunexus_sedes');
-    if (savedSedes) {
-      setSedes(JSON.parse(savedSedes));
-    } else {
-      setSedes(INITIAL_SEDES);
-      localStorage.setItem('edunexus_sedes', JSON.stringify(INITIAL_SEDES));
-    }
-    const savedPrograms = localStorage.getItem('edunexus_academic_programs');
-    if (savedPrograms) setPrograms(JSON.parse(savedPrograms));
+    db.list('sedes').then((data: any[]) => {
+      if (data.length === 0) {
+        // Seed default sede
+        db.create('sedes', INITIAL_SEDES[0]).then(() => {
+          db.list('sedes').then(setSedes);
+        });
+      } else {
+        setSedes(data);
+      }
+    });
+    db.list('academic_programs').then(setPrograms);
   }, []);
 
-  const saveSedes = (updated: any[]) => {
+  const saveSedes = async (updated: any[]) => {
+    // Rebuild: delete all then recreate is complex; instead update individually
+    // For simplicity, store the full array as a single document
+    // Use a special 'sedes_data' collection with one doc
     setSedes(updated);
-    localStorage.setItem('edunexus_sedes', JSON.stringify(updated));
+    // Save each sede that has changed — simpler: upsert each by id
+    for (const sede of updated) {
+      if (sede._docId) {
+        await db.update('sedes', sede._docId, sede);
+      }
+    }
   };
 
   // --- Sedes CRUD ---

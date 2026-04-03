@@ -5,6 +5,7 @@ export interface DBProvider {
   create(collection: string, data: any, config?: any): Promise<string>;
   update(collection: string, id: string, data: any, config?: any): Promise<void>;
   delete(collection: string, id: string, config?: any): Promise<void>;
+  batchSave(collection: string, items: { id?: string, data: any }[], config?: any): Promise<void>;
 }
 
 export interface FirebaseConfig {

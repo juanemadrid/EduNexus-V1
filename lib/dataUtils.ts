@@ -1,13 +1,16 @@
-// Data utility functions for EduNexus
+import { db } from './db';
 
-export const getAllStudents = () => {
-  if (typeof window === 'undefined') return [];
-  const saved = localStorage.getItem('edunexus_registered_students');
-  return saved ? JSON.parse(saved) : [];
+export const getAllStudents = async () => {
+  try {
+    return await db.list<any>('students');
+  } catch (error) {
+    console.error("Error fetching students from Firestore:", error);
+    return [];
+  }
 };
 
-export const exportToCSV = (onSuccess?: (msg: string) => void, onError?: (msg: string) => void) => {
-  const students = getAllStudents();
+export const exportToCSV = async (onSuccess?: (msg: string) => void, onError?: (msg: string) => void) => {
+  const students = await getAllStudents();
   if (students.length === 0) {
     onError?.('No hay datos para exportar.');
     return;
@@ -46,24 +49,23 @@ export const exportToCSV = (onSuccess?: (msg: string) => void, onError?: (msg: s
     XLSX.utils.book_append_sheet(wb, ws, "Base de Datos");
     XLSX.writeFile(wb, `EduNexus_Respaldo_Completo_${new Date().toISOString().split('T')[0]}.xlsx`);
 
-    onSuccess?.('✅ Base de datos exportada en formato Excel con éxito');
+    onSuccess?.('✅ Base de datos exportada en formato Excel con éxito desde Firestore');
   } catch (e) {
     onError?.('❌ Error al exportar Excel.');
   }
 };
 
-export const importFromCSV = (
+export const importFromCSV = async (
   file: File, 
   onSuccess?: (addedCount: number) => void, 
   onError?: (msg: string) => void
 ) => {
   const reader = new FileReader();
-  reader.onload = (event) => {
+  reader.onload = async (event) => {
     try {
       const text = event.target?.result as string;
       const rows = text.split('\n').slice(1);
       const imported = rows.filter(r => r.trim()).map(r => {
-        // Simple CSV parser
         const cells = r.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"|"$/g, '')) || [];
         return { 
           id: cells[0], 
@@ -79,18 +81,21 @@ export const importFromCSV = (
         };
       });
 
-      const current = getAllStudents();
+      const current = await getAllStudents();
       const existingById = new Map(current.map((s: any) => [s.id, s]));
-      let added = 0;
+      const toAdd: any[] = [];
+      
       imported.forEach(s => { 
         if (s.id && !existingById.has(s.id)) { 
-          existingById.set(s.id, s); 
-          added++; 
+          toAdd.push({ id: s.id, data: s });
         } 
       });
-      const merged = Array.from(existingById.values());
-      localStorage.setItem('edunexus_registered_students', JSON.stringify(merged));
-      onSuccess?.(added);
+
+      if (toAdd.length > 0) {
+        await db.batchSave('students', toAdd);
+      }
+      
+      onSuccess?.(toAdd.length);
     } catch (err) {
       onError?.('❌ Error: El archivo no es válido.');
     }

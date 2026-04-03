@@ -1,192 +1,215 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
 import DateRangePicker from '@/components/DateRangePicker';
-import { FileSpreadsheet, ChevronDown, History, Search, User, Calendar, Briefcase, Info, X, Clock } from 'lucide-react';
+import { FileSpreadsheet, ChevronDown, Info } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
 export default function SeguimientosEgresadosPage() {
   const [isExporting, setIsExporting] = useState(false);
-  const [followups, setFollowups] = useState<any[]>([]);
-  const [filteredData, setFilteredData] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const [form, setForm] = useState({ 
-    filtroFecha: 'Fechas',
-    periodo: '',
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+
+  const [form, setForm] = useState({
     fechaRango: 'Hoy',
-    tipo: 'Todos'
+    usuarioId: 'Todos'
   });
 
+  const [touched, setTouched] = useState({ fechaRango: false });
+
   useEffect(() => {
-    const savedFollowups = localStorage.getItem('edunexus_graduate_followups');
-    if (savedFollowups) {
-      const data = JSON.parse(savedFollowups);
-      setFollowups(data);
-      setFilteredData(data);
-    }
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        // Load users who have registered follow-ups
+        const [followups, graduates] = await Promise.all([
+          db.list<any>('graduate_followups').catch(() => []),
+          db.list<any>('graduates').catch(() => [])
+        ]);
+
+        // Build unique user list from follow-up registrars
+        const userMap: Record<string, string> = {};
+        followups.forEach((f: any) => {
+          if (f.registradoPor || f.userId) {
+            const key = f.userId || f.registradoPor;
+            userMap[key] = f.registradoPorNombre || f.userName || key;
+          }
+        });
+        graduates.forEach((g: any) => {
+          if (g.registradoPor || g.userId) {
+            const key = g.userId || g.registradoPor;
+            userMap[key] = g.registradoPorNombre || g.userName || key;
+          }
+        });
+
+        setUsuarios(Object.entries(userMap).map(([id, nombre]) => ({ id, nombre })));
+      } catch (error) {
+        console.error('Error loading seguimientos data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  const handleFilter = () => {
-    let result = [...followups];
+  const handleExport = async () => {
+    setTouched({ fechaRango: true });
+    if (!form.fechaRango) return;
 
-    if (searchTerm) {
-      result = result.filter(f => 
-        f.studentName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        f.studentId.includes(searchTerm)
-      );
-    }
-
-    if (form.tipo !== 'Todos') {
-      result = result.filter(f => f.tipo === form.tipo);
-    }
-
-    setFilteredData(result);
-  };
-
-  const handleExport = () => {
     setIsExporting(true);
-    setTimeout(() => {
+    try {
+      const XLSX = await import('xlsx');
+
+      const [followups, graduates] = await Promise.all([
+        db.list<any>('graduate_followups').catch(() => []),
+        db.list<any>('graduates').catch(() => [])
+      ]);
+
+      // Filter by user if specified
+      let filteredFollowups = followups;
+      if (form.usuarioId !== 'Todos') {
+        filteredFollowups = followups.filter(
+          (f: any) => f.userId === form.usuarioId || f.registradoPor === form.usuarioId
+        );
+      }
+
+      // Build rows — join follow-ups with graduate data
+      const rows = filteredFollowups.map((f: any) => {
+        const grad = graduates.find((g: any) => g.id === f.graduateId || g.studentId === f.studentId);
+        return [
+          f.fecha ? new Date(f.fecha).toLocaleDateString('es-CO') : (f.createdAt ? new Date(f.createdAt).toLocaleDateString('es-CO') : 'N/A'),
+          f.studentName || grad?.name || grad?.nombre || f.graduateId || '—',
+          f.documento || grad?.documento || '—',
+          f.tipo || f.tipoSeguimiento || '—',
+          f.observacion || f.descripcion || f.notas || '—',
+          f.registradoPorNombre || f.userName || '—',
+          f.empresa || grad?.empresa || '—',
+          f.cargo || grad?.cargo || '—'
+        ];
+      });
+
+      const headers = ['Fecha', 'Egresado', 'Documento', 'Tipo Seguimiento', 'Observaciones', 'Registrado Por', 'Empresa', 'Cargo'];
+
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Seguimientos Egresados — EduNexus'],
+        [`Usuario: ${form.usuarioId === 'Todos' ? 'Todos' : usuarios.find(u => u.id === form.usuarioId)?.nombre || form.usuarioId} | Fecha filtro: ${form.fechaRango}`],
+        [],
+        headers,
+        ...rows
+      ]);
+
+      ws['!cols'] = [
+        { wch: 14 }, { wch: 30 }, { wch: 14 }, { wch: 18 },
+        { wch: 50 }, { wch: 20 }, { wch: 25 }, { wch: 20 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Seguimientos');
+      XLSX.writeFile(wb, `Seguimientos_Egresados_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) {
+      console.error('Error exporting seguimientos:', error);
+    } finally {
       setIsExporting(false);
-      alert('Reporte de seguimientos exportado exitosamente a Excel.');
-    }, 1500);
+    }
   };
 
-  const handleChange = (field: string, value: string) => {
-    setForm(p => ({ ...p, [field]: value }));
-  };
+  const isFechaInvalid = touched.fechaRango && !form.fechaRango;
 
   return (
     <DashboardLayout>
-      <div className="glass-panel" style={{ maxWidth: '1000px', margin: '0 auto', background: 'white', padding: '40px', borderRadius: '24px', boxShadow: '0 20px 40px -15px rgba(0,0,0,0.05)' }}>
-         <div style={{ marginBottom: '30px', borderBottom: '1px solid #f1f5f9', paddingBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', margin: '0 0 8px 0', letterSpacing: '-0.5px' }}>
-                Seguimientos Egresados
-              </h1>
-              <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: '1.5' }}>
-                Consulte y exporte la bitácora de seguimiento profesional y académico de sus egresados.
-              </p>
-            </div>
-            <div style={{ background: '#f0fdf4', border: '1px solid #dcfce7', padding: '12px 20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-               <History size={20} style={{ color: '#10b981' }} />
-               <div style={{ textAlign: 'right' }}>
-                 <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '800', textTransform: 'uppercase' }}>Total Registros</div>
-                 <div style={{ fontSize: '18px', fontWeight: '900', color: '#10b981' }}>{filteredData.length}</div>
-               </div>
-            </div>
-         </div>
+      <div className="glass-panel" style={{
+        maxWidth: '680px',
+        margin: '0 auto',
+        background: 'white',
+        padding: '48px',
+        borderRadius: '24px',
+        boxShadow: '0 20px 40px -15px rgba(0,0,0,0.06)',
+        border: '1px solid #f1f5f9'
+      }}>
+        {/* Header */}
+        <div style={{ marginBottom: '36px', borderBottom: '1px solid #f1f5f9', paddingBottom: '24px' }}>
+          <h1 style={{ fontSize: '22px', fontWeight: '900', color: '#1e293b', margin: '0 0 8px 0', letterSpacing: '-0.3px' }}>
+            Seguimientos egresados
+          </h1>
+          <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+            Exporta la bitácora de seguimiento profesional y académico de los egresados de la institución.
+          </p>
+        </div>
 
-         {/* Filters Area */}
-         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '32px', background: '#f8fafc', padding: '24px', borderRadius: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Buscar Egresado</label>
-              <div style={{ position: 'relative' }}>
-                <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                <input 
-                  type="text" 
-                  className="input-premium" 
-                  style={{ width: '100%', paddingLeft: '36px', height: '40px' }} 
-                  placeholder="Nombre o identificación..." 
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
+        {/* Form Fields — Q10-aligned layout */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 140px) 1fr', gap: '20px', alignItems: 'start' }}>
 
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Tipo de Seguimiento</label>
-              <div style={{ position: 'relative' }}>
-                <select className="input-premium" style={{ width: '100%', height: '40px', appearance: 'none' }} value={form.tipo} onChange={e => handleChange('tipo', e.target.value)}>
-                   <option value="Todos">Todos los tipos</option>
-                   <option value="Laboral">Laboral</option>
-                   <option value="Académico">Académico</option>
-                   <option value="Personal">Personal</option>
-                   <option value="Encuesta">Encuesta</option>
-                </select>
-                <ChevronDown size={14} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
-              </div>
-            </div>
+          {/* Fechas */}
+          <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '700', color: '#334155', paddingTop: '11px' }}>
+            Fechas <span style={{ color: '#ef4444' }}>*</span>
+          </label>
+          <div>
+            <DateRangePicker
+              value={form.fechaRango}
+              onChange={(val) => { setTouched({ fechaRango: true }); setForm(p => ({ ...p, fechaRango: val })); }}
+            />
+            {isFechaInvalid && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>El rango de fechas es obligatorio</div>}
+          </div>
 
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-               <button onClick={handleFilter} className="btn-premium" style={{ flex: 1, height: '40px', background: 'white', border: '1px solid #e2e8f0', color: '#1e293b', fontWeight: '800', fontSize: '12px' }}>Filtrar</button>
-               <button 
-                 onClick={handleExport}
-                 className="btn-premium" 
-                 style={{ flex: 1, height: '40px', background: '#10b981', color: 'white', fontWeight: '800', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}
-                 disabled={isExporting}
-               >
-                 <FileSpreadsheet size={16} /> 
-                 {isExporting ? '...' : 'Excel'}
-               </button>
-            </div>
-         </div>
+          {/* Usuario */}
+          <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '700', color: '#334155', paddingTop: '11px' }}>
+            Usuario
+          </label>
+          <div style={{ position: 'relative' }}>
+            <select
+              className="input-premium"
+              style={{
+                width: '100%', height: '42px', fontSize: '14px', background: '#fff',
+                border: '1px solid #d1d5db', borderRadius: '8px',
+                paddingRight: '36px', appearance: 'none', cursor: 'pointer'
+              }}
+              value={form.usuarioId}
+              onChange={e => setForm(p => ({ ...p, usuarioId: e.target.value }))}
+            >
+              <option value="Todos">Todos</option>
+              {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+            </select>
+            <ChevronDown size={14} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+          </div>
 
-         {/* Data Table */}
-         <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden' }}>
-            {filteredData.length > 0 ? (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                     <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '900' }}>Fecha</th>
-                     <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '900' }}>Egresado</th>
-                     <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '900' }}>Tipo</th>
-                     <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: '900' }}>Observaciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredData.map(f => (
-                    <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                           <Calendar size={14} /> {f.fecha}
-                         </div>
-                      </td>
-                      <td style={{ padding: '16px 20px' }}>
-                         <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{f.studentName}</div>
-                         <div style={{ fontSize: '12px', color: '#64748b' }}>ID: {f.studentId}</div>
-                      </td>
-                      <td style={{ padding: '16px 20px' }}>
-                         <span style={{ 
-                           background: f.tipo === 'Laboral' ? '#eff6ff' : f.tipo === 'Académico' ? '#f5f3ff' : '#fef2f2', 
-                           color: f.tipo === 'Laboral' ? '#3b82f6' : f.tipo === 'Académico' ? '#8b5cf6' : '#ef4444',
-                           padding: '4px 10px', 
-                           borderRadius: '12px', 
-                           fontSize: '11px', 
-                           fontWeight: '800',
-                           textTransform: 'uppercase'
-                         }}>
-                           {f.tipo}
-                         </span>
-                      </td>
-                      <td style={{ padding: '16px 20px', fontSize: '13px', color: '#334155', maxWidth: '300px' }}>
-                         {f.observacion}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
-                <Clock size={40} style={{ margin: '0 auto 16px', display: 'block', opacity: 0.5 }} />
-                <p style={{ margin: 0, fontWeight: '700' }}>No hay registros de seguimiento que coincidan con los filtros.</p>
-              </div>
-            )}
-         </div>
+        </div>
 
-         <div style={{ marginTop: '24px', background: '#fffbeb', padding: '16px', borderRadius: '12px', display: 'flex', gap: '12px', border: '1px solid #fef3c7' }}>
-            <Info size={20} style={{ color: '#d97706', flexShrink: 0 }} />
-            <p style={{ margin: 0, fontSize: '12px', color: '#92400e', lineHeight: '1.4' }}>
-              <strong>Importante:</strong> Los seguimientos se registran en el módulo de <em>Institucional &gt; Estudiantes &gt; Egresados</em>. Asegúrese de mantener actualizada la información para cumplir con los procesos de aseguramiento de la calidad.
-            </p>
-         </div>
+        {/* Export Button */}
+        <div style={{ marginTop: '40px', paddingTop: '24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            className="btn-premium"
+            onClick={handleExport}
+            disabled={isExporting || isLoading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              background: '#10b981', color: 'white',
+              padding: '10px 24px', fontSize: '14px', fontWeight: '700',
+              borderRadius: '8px', border: 'none',
+              cursor: isExporting || isLoading ? 'wait' : 'pointer',
+              opacity: isExporting ? 0.7 : 1,
+              boxShadow: '0 4px 14px -3px rgba(16,185,129,0.4)'
+            }}
+          >
+            <FileSpreadsheet size={18} />
+            {isExporting ? 'Exportando...' : 'Exportar'}
+          </button>
+        </div>
+
+        {/* Info note */}
+        <div style={{ marginTop: '20px', background: '#f8fafc', padding: '14px 18px', borderRadius: '10px', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+          <Info size={16} style={{ color: '#64748b', flexShrink: 0, marginTop: '1px' }} />
+          <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
+            Los seguimientos se registran en <strong>Institucional › Egresados</strong>. El reporte incluyó los campos: fecha, nombre, tipo de seguimiento, empresa, cargo y observaciones.
+          </p>
+        </div>
       </div>
 
       <style jsx global>{`
-        .glass-panel { border-radius: 20px; border: 1px solid #e2e8f0; }
-        .input-premium { border-radius: 12px; outline: none; transition: 0.2s; padding: 0 16px; border: 1px solid #e2e8f0; font-size: 14px; }
-        .input-premium:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
-        .btn-premium { border-radius: 12px; border: none; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
-        .btn-premium:hover { transform: translateY(-1px); filter: brightness(1.05); }
+        .input-premium { outline: none; padding-left: 12px; }
+        .input-premium:focus { border-color: #10b981 !important; box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+        .btn-premium { transition: all 0.2s; }
+        .btn-premium:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); }
       `}</style>
     </DashboardLayout>
   );

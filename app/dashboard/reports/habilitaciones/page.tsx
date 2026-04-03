@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import DateRangePicker from '@/components/DateRangePicker';
 import { FileDown } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
 export default function HabilitacionesPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -20,9 +21,13 @@ export default function HabilitacionesPage() {
     fechaRango: false
   });
 
+  const [periods, setPeriods] = useState<any[]>([]);
+
   useEffect(() => {
-    const savedSubjects = localStorage.getItem('edunexus_academic_subjects');
-    if (savedSubjects) setSubjects(JSON.parse(savedSubjects));
+    // Fetch subjects from Firestore with caching
+    db.list('academic_subjects', null, { cache: true }).then(setSubjects).catch(console.error);
+    // Fetch periods from Firestore with caching
+    db.list('academic_periods', null, { cache: true }).then(setPeriods).catch(console.error);
   }, []);
 
   const handleCharge = () => {
@@ -96,8 +101,7 @@ export default function HabilitacionesPage() {
                       onChange={e => { setTouched(p => ({...p, periodo: true})); handleChange('periodo', e.target.value); }}
                     >
                       <option value="">Seleccione</option>
-                      <option value="2026 - 01">2026 - 01</option>
-                      <option value="2026 - 02">2026 - 02</option>
+                      {periods.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                     </select>
                     {isInvalid('periodo') && (
                        <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>El campo es requerido</div>

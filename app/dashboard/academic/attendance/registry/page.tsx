@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { db } from '@/lib/db';
 
 export default function ManualAttendanceRegistry() {
   const [sedes, setSedes] = useState<any[]>([]);
@@ -37,22 +38,19 @@ export default function ManualAttendanceRegistry() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   useEffect(() => {
-    // Load local data
-    const savedSedes = JSON.parse(localStorage.getItem('edunexus_sedes') || '[]');
-    setSedes(savedSedes);
-
-    const savedProgramas = JSON.parse(localStorage.getItem('edunexus_academic_programs') || '[]');
-    setProgramas(savedProgramas);
+    db.list('sedes').then(setSedes);
+    db.list('academic_programs').then(setProgramas);
   }, []);
 
   useEffect(() => {
     if (selectedSede && selectedPrograma) {
-      const savedCursos = JSON.parse(localStorage.getItem('edunexus_cursos') || '[]');
-      const filtered = savedCursos.filter((c: any) => 
-        (c.sedeId === selectedSede || c.sede === selectedSede) && 
-        (c.programaId === selectedPrograma || c.programa === selectedPrograma)
-      );
-      setCursos(filtered);
+      db.list('cursos').then((allCursos: any[]) => {
+        const filtered = allCursos.filter((c: any) => 
+          (c.sedeId === selectedSede || c.sede === selectedSede || c.sedeJornada?.startsWith(selectedSede)) && 
+          (c.programaId === selectedPrograma || c.programa === selectedPrograma)
+        );
+        setCursos(filtered);
+      });
     } else {
       setCursos([]);
     }
@@ -61,36 +59,46 @@ export default function ManualAttendanceRegistry() {
     setAttendance({});
   }, [selectedSede, selectedPrograma]);
 
-  const handleConsultar = () => {
+  const handleConsultar = async () => {
     if (!selectedCurso) return;
 
-    // Load students from group
-    const savedGrupos = JSON.parse(localStorage.getItem('edunexus_grupos') || '[]');
-    const group = savedGrupos.find((g: any) => g.id === selectedCurso || g.cursoId === selectedCurso);
+    const allGrupos = await db.list('grupos');
+    const group = allGrupos.find((g: any) => g.id === selectedCurso || g.cursoId === selectedCurso);
     
-    if (group && group.students) {
-      setStudents(group.students);
+    if (group && ((group as any).students || (group as any).estudiantes)) {
+      const studentIds = (group as any).students || (group as any).estudiantes;
+      // Fetch actual student objects
+      const allStudents = await db.list('registered_students');
+      const groupStudents = allStudents.filter((s: any) => studentIds.includes(s.id));
+      setStudents(groupStudents);
       
-      // Load existing attendance for this date if any
-      const savedAttendance = JSON.parse(localStorage.getItem('edunexus_attendance_records') || '[]');
-      const dateRecords = savedAttendance.filter((r: any) => 
-        r.cursoId === selectedCurso && r.date === selectedDate
-      );
-
+      // Load existing attendance for this date (FILTERED)
+      const dateRecords = await db.list('attendance_records', { 
+        cursoId: selectedCurso, 
+        date: selectedDate 
+      });
+      
       const initialAttendance: Record<string, 'A' | 'I' | 'T' | 'J'> = {};
-      group.students.forEach((s: any) => {
+      groupStudents.forEach((s: any) => {
         const record = dateRecords.find((r: any) => r.studentId === s.id);
-        initialAttendance[s.id] = record ? record.status : 'A'; // Default to Present if new
+        initialAttendance[s.id] = record ? (record as any).status : 'A';
       });
       setAttendance(initialAttendance);
     } else {
-      // Fallback: search all students for this course
-      const allStudents = JSON.parse(localStorage.getItem('edunexus_registered_students') || '[]');
+      const allStudents = await db.list('registered_students');
       const courseStudents = allStudents.filter((s: any) => s.details?.cursoId === selectedCurso);
       setStudents(courseStudents);
       
+      const dateRecords = await db.list('attendance_records', { 
+        cursoId: selectedCurso, 
+        date: selectedDate 
+      });
+
       const initialAttendance: Record<string, 'A' | 'I' | 'T' | 'J'> = {};
-      courseStudents.forEach((s: any) => initialAttendance[s.id] = 'A');
+      courseStudents.forEach((s: any) => {
+        const record = dateRecords.find((r: any) => r.studentId === s.id);
+        initialAttendance[s.id] = record ? (record as any).status : 'A';
+      });
       setAttendance(initialAttendance);
     }
     setSaveStatus('idle');
@@ -100,41 +108,42 @@ export default function ManualAttendanceRegistry() {
     setAttendance(prev => ({ ...prev, [studentId]: status }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
     setSaveStatus('idle');
 
-    setTimeout(() => {
-      try {
-        const savedRecords = JSON.parse(localStorage.getItem('edunexus_attendance_records') || '[]');
-        
-        // Remove old records for this course & date to avoid duplicates
-        const filteredRecords = savedRecords.filter((r: any) => 
-          !(r.cursoId === selectedCurso && r.date === selectedDate)
-        );
-
-        // Add new records
-        const newRecords = students.map(s => ({
-          id: crypto.randomUUID(),
+    try {
+      const existingRecords = await db.list('attendance_records', {
+        cursoId: selectedCurso,
+        date: selectedDate
+      });
+      
+      const batchItems = students.map(s => {
+        const existing = existingRecords.find((r: any) => r.studentId === s.id);
+        const recordData = {
           studentId: s.id,
-          studentName: s.name,
+          studentName: s.name || `${s.nombres} ${s.apellidos}`,
           cursoId: selectedCurso,
           date: selectedDate,
           status: attendance[s.id] || 'A',
           periodo: '2026-01',
           recordedAt: new Date().toISOString()
-        }));
+        };
 
-        const updated = [...filteredRecords, ...newRecords];
-        localStorage.setItem('edunexus_attendance_records', JSON.stringify(updated));
-        
-        setSaveStatus('success');
-        setIsSaving(false);
-      } catch (e) {
-        setSaveStatus('error');
-        setIsSaving(false);
-      }
-    }, 800);
+        return {
+          id: existing ? ((existing as any).id || (existing as any)._docId) : undefined,
+          data: recordData
+        };
+      });
+
+      await db.batchSave('attendance_records', batchItems);
+      setSaveStatus('success');
+    } catch (e) {
+      console.error(e);
+      setSaveStatus('error');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (

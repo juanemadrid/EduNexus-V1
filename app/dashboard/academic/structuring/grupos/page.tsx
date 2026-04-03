@@ -2,11 +2,15 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, X, Edit, Trash2, Eye, Search, Download, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
 export default function GruposPage() {
   const [grupos, setGrupos] = useState<any[]>([]);
   const [cursos, setCursos] = useState<any[]>([]);
   const [students, setStudents] = useState<any[]>([]);
+  const [periodos, setPeriodos] = useState<any[]>([]);
+  const [sedes, setSedes] = useState<any[]>([]);
+  const [programas, setProgramas] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
@@ -16,31 +20,45 @@ export default function GruposPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showStudentsModal, setShowStudentsModal] = useState(false);
   const [viewingGrupo, setViewingGrupo] = useState<any>(null);
+  const [modalSearchTerm, setModalSearchTerm] = useState('');
+  const [modalFilterNivel, setModalFilterNivel] = useState('');
+  const [modalFilterPrograma, setModalFilterPrograma] = useState('');
+  const [filterPeriodo, setFilterPeriodo] = useState('');
+  const [filterSede, setFilterSede] = useState('');
+  const [filterPrograma, setFilterPrograma] = useState('');
+  const [showInactivos, setShowInactivos] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
   const itemsPerPage = 10;
 
   const [form, setForm] = useState({
     codigo: '',
     nombre: '',
     cursoId: '',
+    periodoId: '',
+    sedeId: '',
+    programaId: '',
     cupoMaximo: '',
     estado: 'Activo',
     estudiantes: [] as string[]
   });
 
   useEffect(() => {
-    const savedGrupos = localStorage.getItem('edunexus_grupos');
-    if (savedGrupos) setGrupos(JSON.parse(savedGrupos));
-
-    const savedCursos = localStorage.getItem('edunexus_cursos');
-    if (savedCursos) setCursos(JSON.parse(savedCursos));
-
-    const savedStudents = localStorage.getItem('edunexus_registered_students');
-    if (savedStudents) setStudents(JSON.parse(savedStudents));
+    db.list('grupos').then(setGrupos);
+    db.list('cursos').then(setCursos);
+    db.list('students').then(setStudents);
+    db.list('academic_periods').then(setPeriodos);
+    db.list('sedes').then(setSedes);
+    db.list('academic_programs').then(setProgramas);
   }, []);
 
-  const save = (updated: any[]) => {
-    setGrupos(updated);
-    localStorage.setItem('edunexus_grupos', JSON.stringify(updated));
+  const save = async (data: any, id?: string) => {
+    if (id) {
+      await db.update('grupos', id, data);
+    } else {
+      await db.create('grupos', data);
+    }
+    const fresh = await db.list('grupos');
+    setGrupos(fresh);
   };
 
   const getCursoLabel = (id: string) => {
@@ -48,22 +66,17 @@ export default function GruposPage() {
     return c ? `${c.codigo} — ${c.asignaturaNombre}` : id;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.codigo || !form.nombre || !form.cupoMaximo) {
       alert('Complete todos los campos obligatorios (*)');
       return;
     }
-    const grupo = {
-      id: isEditing && editingId ? editingId : `grp-${Date.now()}`,
-      ...form
-    };
-    let updated;
+    
     if (isEditing && editingId) {
-      updated = grupos.map(g => g.id === editingId ? grupo : g);
+      await save(form, editingId);
     } else {
-      updated = [grupo, ...grupos];
+      await save(form);
     }
-    save(updated);
     closeModal();
   };
 
@@ -71,27 +84,46 @@ export default function GruposPage() {
     setShowModal(false);
     setIsEditing(false);
     setEditingId(null);
-    setForm({ codigo: '', nombre: '', cursoId: '', cupoMaximo: '', estado: 'Activo', estudiantes: [] });
+    setForm({ codigo: '', nombre: '', cursoId: '', periodoId: '', sedeId: '', programaId: '', cupoMaximo: '', estado: 'Activo', estudiantes: [] });
   };
 
   const handleEdit = (g: any) => {
-    setForm({ codigo: g.codigo, nombre: g.nombre, cursoId: g.cursoId || '', cupoMaximo: g.cupoMaximo, estado: g.estado, estudiantes: g.estudiantes || [] });
+    setForm({ 
+      codigo: g.codigo, 
+      nombre: g.nombre, 
+      cursoId: g.cursoId || '', 
+      periodoId: g.periodoId || '',
+      sedeId: g.sedeId || '',
+      programaId: g.programaId || '',
+      cupoMaximo: g.cupoMaximo, 
+      estado: g.estado, 
+      estudiantes: g.estudiantes || [] 
+    });
     setEditingId(g.id);
     setIsEditing(true);
     setShowModal(true);
   };
 
   const handleDelete = (id: string) => { setDeletingId(id); setShowDeleteModal(true); };
-  const confirmDelete = () => {
-    if (deletingId) save(grupos.filter(g => g.id !== deletingId));
+  const confirmDelete = async () => {
+    if (deletingId) {
+      await db.delete('grupos', deletingId);
+      const fresh = await db.list('grupos');
+      setGrupos(fresh);
+    }
     setShowDeleteModal(false);
     setDeletingId(null);
   };
 
-  const filtered = grupos.filter(g =>
-    g.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    g.codigo?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = grupos.filter(g => {
+    const matchSearch = g.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) || g.codigo?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchEstado = showInactivos ? true : g.estado === 'Activo';
+    const matchPeriodo = filterPeriodo === '' || g.periodoId === filterPeriodo;
+    const matchSede = filterSede === '' || g.sedeId === filterSede;
+    const matchPrograma = filterPrograma === '' || g.programaId === filterPrograma;
+    
+    return matchSearch && matchEstado && matchPeriodo && matchSede && matchPrograma;
+  });
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const currentItems = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -108,15 +140,50 @@ export default function GruposPage() {
           </button>
         </div>
 
-        {/* Search */}
-        <div style={{ background: 'white', borderRadius: '16px', padding: '16px 24px', marginBottom: '20px', display: 'flex', gap: '12px', alignItems: 'center', border: '1px solid #e2e8f0' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-            <input type="text" placeholder="Buscar grupos..." className="input-premium" style={{ paddingLeft: '42px', height: '42px', background: '#f8fafc' }} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+        {/* Search Q10 Style */}
+        <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', marginBottom: '20px' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e7eb', display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <div style={{ position: 'relative', flex: 1, display: 'flex' }}>
+              <input type="text" placeholder="Buscar grupos..." style={{ flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '4px 0 0 4px', fontSize: '13px', outline: 'none' }} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              <button style={{ background: '#10b981', color: 'white', border: 'none', padding: '0 16px', borderRadius: '0 4px 4px 0', cursor: 'pointer' }}><Search size={16} /></button>
+            </div>
+            <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '4px', border: '1px solid #d1d5db', background: 'white', color: '#374151', fontSize: '13px', cursor: 'pointer' }}>
+              <Download size={14} /> Exportar
+            </button>
+            <button onClick={() => setShowAdvanced(!showAdvanced)} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+              Búsqueda avanzada {showAdvanced ? '▲' : '▼'}
+            </button>
           </div>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#475569', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
-            <Download size={16} /> Exportar
-          </button>
+          
+          {showAdvanced && (
+            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '16px', alignItems: 'center', background: '#f9fafb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', overflow: 'hidden' }}>
+                <span style={{ padding: '8px 12px', fontSize: '12px', color: '#6b7280', background: '#f3f4f6', borderRight: '1px solid #d1d5db' }}>Periodo:</span>
+                <select value={filterPeriodo} onChange={e => setFilterPeriodo(e.target.value)} style={{ flex: 1, border: 'none', padding: '8px', fontSize: '13px', outline: 'none', background: 'transparent' }}>
+                  <option value="">Todos</option>
+                  {periodos.map((p: any) => <option key={p.id} value={p.id}>{p.nombre || p.name}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', overflow: 'hidden' }}>
+                <span style={{ padding: '8px 12px', fontSize: '12px', color: '#6b7280', background: '#f3f4f6', borderRight: '1px solid #d1d5db', whiteSpace: 'nowrap' }}>Sede - jornada:</span>
+                <select value={filterSede} onChange={e => setFilterSede(e.target.value)} style={{ flex: 1, border: 'none', padding: '8px', fontSize: '13px', outline: 'none', background: 'transparent' }}>
+                  <option value="">Todos</option>
+                  {sedes.map((s: any) => <option key={s.id} value={s.id}>{s.nombre || s.name}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', overflow: 'hidden' }}>
+                <span style={{ padding: '8px 12px', fontSize: '12px', color: '#6b7280', background: '#f3f4f6', borderRight: '1px solid #d1d5db' }}>Programa:</span>
+                <select value={filterPrograma} onChange={e => setFilterPrograma(e.target.value)} style={{ flex: 1, border: 'none', padding: '8px', fontSize: '13px', outline: 'none', background: 'transparent' }}>
+                  <option value="">Todos</option>
+                  {programas.map((p: any) => <option key={p.id} value={p.id}>{p.nombre || p.name}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input type="checkbox" id="inactivos" checked={showInactivos} onChange={e => setShowInactivos(e.target.checked)} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
+                <label htmlFor="inactivos" style={{ fontSize: '13px', color: '#374151', cursor: 'pointer' }}>¿Incluir inactivos?</label>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Table */}
@@ -197,10 +264,31 @@ export default function GruposPage() {
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Nombre *</label>
                 <input type="text" className="input-premium" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Ej: GRUPO A - MAÑANA" />
               </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Curso vinculado</label>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Periodo vinculado</label>
+                <select className="input-premium" value={form.periodoId} onChange={e => setForm(f => ({ ...f, periodoId: e.target.value }))}>
+                  <option value="">Opcional...</option>
+                  {periodos.map((p: any) => <option key={p.id} value={p.id}>{p.nombre || p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Sede vinculada</label>
+                <select className="input-premium" value={form.sedeId} onChange={e => setForm(f => ({ ...f, sedeId: e.target.value }))}>
+                  <option value="">Opcional...</option>
+                  {sedes.map((s: any) => <option key={s.id} value={s.id}>{s.nombre || s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Programa vinculado</label>
+                <select className="input-premium" value={form.programaId} onChange={e => setForm(f => ({ ...f, programaId: e.target.value }))}>
+                  <option value="">Opcional...</option>
+                  {programas.map((p: any) => <option key={p.id} value={p.id}>{p.nombre || p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Curso principal</label>
                 <select className="input-premium" value={form.cursoId} onChange={e => setForm(f => ({ ...f, cursoId: e.target.value }))}>
-                  <option value="">Seleccione un curso</option>
+                  <option value="">Opcional...</option>
                   {cursos.map((c: any) => <option key={c.id} value={c.id}>{c.codigo} — {c.asignaturaNombre || c.nombre}</option>)}
                 </select>
               </div>
@@ -230,15 +318,53 @@ export default function GruposPage() {
       {/* STUDENTS IN GROUP MODAL */}
       {showStudentsModal && viewingGrupo && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="animate-fade" style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '560px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+          <div className="animate-fade" style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '650px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
             <div style={{ background: 'var(--primary)', padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, color: 'white', fontSize: '16px', fontWeight: '800' }}>Grupo: {viewingGrupo.nombre}</h3>
               <button onClick={() => setShowStudentsModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><X size={18} /></button>
             </div>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <input 
+                type="text" 
+                placeholder="Buscar por nombre o ID..." 
+                className="input-premium" 
+                style={{ flex: 1, minWidth: '150px', padding: '10px 14px', fontSize: '13px' }}
+                value={modalSearchTerm}
+                onChange={e => setModalSearchTerm(e.target.value)}
+              />
+              <select 
+                className="input-premium" 
+                style={{ width: '160px', padding: '10px 14px', fontSize: '13px' }}
+                value={modalFilterPrograma}
+                onChange={e => setModalFilterPrograma(e.target.value)}
+              >
+                <option value="">Todos los programas</option>
+                {Array.from(new Set(students.map((s:any) => s.programaNombre || s.programaId || s.programa).filter(Boolean))).map(p => (
+                  <option key={p as string} value={p as string}>{p as string}</option>
+                ))}
+              </select>
+              <select 
+                className="input-premium" 
+                style={{ width: '150px', padding: '10px 14px', fontSize: '13px' }}
+                value={modalFilterNivel}
+                onChange={e => setModalFilterNivel(e.target.value)}
+              >
+                <option value="">Todos los grados</option>
+                {Array.from(new Set(students.map((s:any) => s.nivel).filter(Boolean))).sort().map(n => (
+                  <option key={n as string} value={n as string}>{n as string}</option>
+                ))}
+              </select>
+            </div>
             <div style={{ overflowY: 'auto', flex: 1, padding: '20px 24px' }}>
               {students.length === 0 ? (
                 <p style={{ color: '#94a3b8', textAlign: 'center', padding: '40px 0' }}>No hay estudiantes registrados</p>
-              ) : students.map((s: any) => {
+              ) : students.filter((s:any) => {
+                  const matchSearch = modalSearchTerm === '' || (s.name || '').toLowerCase().includes(modalSearchTerm.toLowerCase()) || (s.id || '').toLowerCase().includes(modalSearchTerm.toLowerCase());
+                  const matchNivel = modalFilterNivel === '' || s.nivel === modalFilterNivel;
+                  const currentProg = s.programaNombre || s.programaId || s.programa;
+                  const matchProg = modalFilterPrograma === '' || currentProg === modalFilterPrograma;
+                  return matchSearch && matchNivel && matchProg;
+              }).map((s: any) => {
                 const enrolled = (viewingGrupo.estudiantes || []).includes(s.id);
                 return (
                   <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: '12px', marginBottom: '6px', background: enrolled ? 'rgba(16,185,129,0.05)' : '#f8fafc', border: `1px solid ${enrolled ? 'rgba(16,185,129,0.2)' : '#f1f5f9'}` }}>
@@ -251,10 +377,13 @@ export default function GruposPage() {
                         const newIds = enrolled
                           ? (viewingGrupo.estudiantes || []).filter((id: string) => id !== s.id)
                           : [...(viewingGrupo.estudiantes || []), s.id];
-                        const updatedGrupo = { ...viewingGrupo, estudiantes: newIds };
-                        setViewingGrupo(updatedGrupo);
-                        const updated = grupos.map(g => g.id === viewingGrupo.id ? updatedGrupo : g);
-                        save(updated);
+                        const updatedForm = { ...viewingGrupo, estudiantes: newIds };
+                        delete (updatedForm as any).id;
+                        delete (updatedForm as any)._docId;
+                        
+                        save(updatedForm, viewingGrupo.id || viewingGrupo._docId).then(() => {
+                          setViewingGrupo({ ...viewingGrupo, estudiantes: newIds });
+                        });
                       }}
                       style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', background: enrolled ? '#ef4444' : 'var(--primary)', color: 'white', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}
                     >

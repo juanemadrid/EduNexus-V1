@@ -1,0 +1,25 @@
+{
+  "student": {
+    "courseId": "curso-10a-2026",
+    "createdAt": 1774645569965,
+    "id": "stud-01",
+    "email": "jmadrid@estudiante.co",
+    "sedeId": "sede-principal-hq",
+    "status": "active",
+    "level": "10A",
+    "sedeJornada": "SEDE PRINCIPAL",
+    "name": "Juan Eduardo Madrid",
+    "gpa": 4.8,
+    "programId": "prog-bach-001"
+  },
+  "grade": {
+    "periodo": "2026 - 01",
+    "period": "2026 - 01",
+    "studentId": "stud-01",
+    "id": "grade-fail-1",
+    "cursoId": "curso-10a-2026",
+    "grade": 2.1,
+    "createdAt": 1775061065058,
+    "courseName": "Matematicas"
+  }
+}

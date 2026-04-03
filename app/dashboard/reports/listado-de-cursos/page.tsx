@@ -3,13 +3,16 @@ import DashboardLayout from '@/components/DashboardLayout';
 import DateRangePicker from '@/components/DateRangePicker';
 import { FileDown } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
 export default function ListadoCursosPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [programs, setPrograms] = useState<any[]>([]);
+  const [sedesJornadas, setSedesJornadas] = useState<any[]>([]);
+  const [periods, setPeriods] = useState<any[]>([]);
   const [form, setForm] = useState({ 
     filtroFecha: 'Período',
-    periodo: '2026 - 01', 
+    periodo: '', 
     fechaRango: 'Hoy',
     sedeJornada: 'Todos', 
     programaId: 'Todos',
@@ -21,8 +24,22 @@ export default function ListadoCursosPage() {
   });
 
   useEffect(() => {
-    const savedPrograms = localStorage.getItem('edunexus_academic_programs_data');
-    if (savedPrograms) setPrograms(JSON.parse(savedPrograms));
+    // Fetch programs and other data from Firestore with caching
+    db.list('academic_programs', null, { cache: true }).then(setPrograms).catch(console.error);
+    
+    // Fetch Sedes to build Sede-Jornada options dynamically
+    db.list('sedes', null, { cache: true }).then(data => {
+      const options: any[] = [];
+      data.forEach((s: any) => {
+        (s.jornadas || []).forEach((j: any) => {
+          options.push(`${s.nombre} - ${j.nombre}`);
+        });
+      });
+      setSedesJornadas(options);
+    }).catch(console.error);
+
+    // Fetch periods with caching
+    db.list('academic_periods', null, { cache: true }).then(setPeriods).catch(console.error);
   }, []);
 
   const handleCharge = () => {
@@ -96,7 +113,7 @@ export default function ListadoCursosPage() {
                       onChange={e => { setTouched(p => ({...p, periodo: true})); handleChange('periodo', e.target.value); }}
                     >
                       <option value="">Seleccione</option>
-                      <option value="2026 - 01">2026 - 01</option>
+                      {periods.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                       <option value="Todos">Todos</option>
                     </select>
                     {isInvalid('periodo') && (
@@ -127,7 +144,7 @@ export default function ListadoCursosPage() {
               <div>
                 <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc', border: '1px solid #e2e8f0' }} value={form.sedeJornada} onChange={e => handleChange('sedeJornada', e.target.value)}>
                   <option value="Todos">Todos</option>
-                  <option value="PRINCIPAL - MAÑANA">PRINCIPAL - MAÑANA</option>
+                  {sedesJornadas.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                 </select>
               </div>
 

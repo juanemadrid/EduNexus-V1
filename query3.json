@@ -1,0 +1,20 @@
+{
+  "sedes": [
+    {
+      "id": "sede-principal-123",
+      "n": "SEDE CENTRAL NUEVA ESPERANZA"
+    }
+  ],
+  "progs": [
+    {
+      "id": "program-bac-123",
+      "n": "BACHILLERATO ACADÉMICO"
+    }
+  ],
+  "studs": [
+    {
+      "id": "3001",
+      "name": "ACEVEDO ILCE ALVAREZ MARIA"
+    }
+  ]
+}

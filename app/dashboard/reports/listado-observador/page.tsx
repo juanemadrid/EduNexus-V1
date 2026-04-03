@@ -4,6 +4,7 @@ import DateRangePicker from '@/components/DateRangePicker';
 import { FileDown, Search, Filter, AlertCircle, CheckCircle, Info, User, ChevronDown } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import { db } from '@/lib/db';
 
 export default function ListadoObservadorPage() {
   const [isExporting, setIsExporting] = useState(false);
@@ -15,44 +16,58 @@ export default function ListadoObservadorPage() {
   const [fechaOption, setFechaOption] = useState('Este mes');
   const [customRange, setCustomRange] = useState<{from: string; to: string} | null>(null);
   const [periodo, setPeriodo] = useState('Todos');
+  const [periods, setPeriods] = useState<any[]>([]);
   const [programaId, setProgramaId] = useState('Todos');
   const [showNoResultsModal, setShowNoResultsModal] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    try {
+      const [savedPrograms, savedPeriods] = await Promise.all([
+        db.list<any>('academic_programs'),
+        db.list<any>('academic_periods')
+      ]);
+      setPrograms(savedPrograms);
+      setPeriods(savedPeriods);
+    } catch (error) {
+       console.error("Error loading initial data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const savedPrograms = localStorage.getItem('edunexus_academic_programs');
-    if (savedPrograms) setPrograms(JSON.parse(savedPrograms));
+    loadInitialData();
   }, []);
 
-  const handleExport = () => {
-    // 1. Obtener o generar datos sincrónicamente
-    let storedObs = [];
+  const handleExport = async () => {
+    setIsExporting(true);
     try {
-      storedObs = JSON.parse(localStorage.getItem('edunexus_observations') || '[]');
-    } catch (e) {}
-    
-    if (storedObs.length === 0) {
-      setIsExporting(false);
-      setShowNoResultsModal(true);
-      return;
-    }
-    
-    setObservations(storedObs);
-    
-    // 2. Generar archivo Excel Real (XLSX) con diseño y anchos perfectos
-    const headers = ['ID Estudiante', 'Nombre Completo', 'Fecha', 'Tipo de Falta', 'Descripcion', 'Docente'];
-    const rowData = storedObs.map((o: any) => [
-      o.studentId || '',
-      o.studentName || '',
-      o.date || '',
-      o.type || '',
-      o.description || '',
-      o.teacher || ''
-    ]);
-    
-    try {
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rowData]);
+      // 1. Obtener datos asincrónicamente
+      const storedObs = await db.list<any>('student_observations');
       
-      // Autoajustar el ancho de las columnas (haciendo que los números grandes no colapsen a científica)
+      if (storedObs.length === 0) {
+        setIsExporting(false);
+        setShowNoResultsModal(true);
+        return;
+      }
+      
+      setObservations(storedObs);
+      
+      // 2. Generar archivo Excel Real (XLSX) con diseño y anchos perfectos
+      const headers = ['ID Estudiante', 'Nombre Completo', 'Fecha', 'Tipo de Falta', 'Descripcion', 'Docente'];
+      const rowData = storedObs.map((o: any) => [
+        o.studentId || '',
+        o.studentName || '',
+        o.date || '',
+        o.type || '',
+        o.description || '',
+        o.teacher || ''
+      ]);
+      
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rowData]);
       ws['!cols'] = [
         { wch: 16 }, // ID Estudiante
         { wch: 35 }, // Nombre
@@ -65,17 +80,14 @@ export default function ListadoObservadorPage() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Observador");
       XLSX.writeFile(wb, `Listado_Observador_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      // 3. Mostrar la tabla resumen abajo
+      setHasLoaded(true);
     } catch (err) {
       console.error('Error exportando Excel', err);
-    }
-    
-    // 3. Simular progreso para mostrar la tabla resumen abajo
-    setIsExporting(true);
-    setHasLoaded(false);
-    setTimeout(() => {
+    } finally {
       setIsExporting(false);
-      setHasLoaded(true);
-    }, 1000);
+    }
   };
 
   const filteredObservations = observations.filter(obs => 
@@ -113,9 +125,10 @@ export default function ListadoObservadorPage() {
 
               <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>Período</label>
               <select className="input-premium" style={{ width: '100%', height: '42px', fontSize: '14px', background: '#f8fafc' }} value={periodo} onChange={e => setPeriodo(e.target.value)}>
-                <option>Todos</option>
-                <option>2026 - 01</option>
-                <option>2026 - 02</option>
+                <option value="Todos">Todos</option>
+                {periods.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} {p.year ? `(${p.year})` : ''}</option>
+                ))}
               </select>
 
               <label style={{ textAlign: 'right', fontSize: '13px', fontWeight: '800', color: '#334155' }}>Programas</label>

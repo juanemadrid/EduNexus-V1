@@ -1,0 +1,4 @@
+"Path","LineNumber","Line"
+"E:\EduNexus\app\dashboard\institutional\people\admins\basic-info\[id]\page.tsx","215","      router.push('/dashboard/admins/basic-info');"
+"E:\EduNexus\app\dashboard\institutional\people\admins\basic-info\[id]\page.tsx","270","          onClick={() => router.push('/dashboard/admins/basic-info?openModal=true')}"
+"E:\EduNexus\app\dashboard\institutional\people\teachers\profile\[id]\page.tsx","210","          href=""/dashboard/teachers/register"""

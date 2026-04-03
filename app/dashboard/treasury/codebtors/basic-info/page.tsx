@@ -1,13 +1,13 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
 import SearchableBarrioInput from '@/components/SearchableBarrioInput';
-
-import { Search, Eye, ChevronRight, ChevronLeft, Plus, ChevronDown, X, MapPin, Save } from 'lucide-react';
+import { Search, Eye, ChevronRight, ChevronLeft, Plus, ChevronDown, X, MapPin, Save, UserCheck, Phone, Mail, Trash2, Calendar } from 'lucide-react';
 import React, { useState, useRef, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ALL_CITIES } from '@/lib/colombiaData';
 import { TIPOS_IDENTIFICACION, GENEROS } from '@/lib/institutionalParams';
+import { db } from '@/lib/db';
 
 const normalizeString = (str: string) =>
   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -31,20 +31,26 @@ const SearchableCityInput = ({ value, onChange, onSelect, placeholder }: {
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <div style={{ position: 'relative' }}>
-        <input className="input-premium" style={{ width: '100%', paddingRight: '36px', fontSize: '13px', height: '38px' }}
+        <input className="input-premium" style={{ width: '100%', paddingRight: '36px', fontSize: '13px', height: '42px', borderRadius: '12px', background: '#f8fafc' }}
           value={value} onChange={e => { onChange(e.target.value); setShow(true); }} onFocus={() => setShow(true)} placeholder={placeholder} />
-        <Search size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+        <Search size={14} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
       </div>
       {show && value.length > 0 && (
-        <div className="glass-panel" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, marginTop: '4px', padding: '6px', maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
+        <div className="glass-panel" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 1000, marginTop: '8px', padding: '8px', maxHeight: '240px', overflowY: 'auto', background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', boxShadow: '0 10px 30px -5px rgba(0,0,0,0.1)' }}>
           {filtered.length > 0 ? filtered.map((city, i) => (
             <div key={i} onClick={() => { onSelect(city); setShow(false); }}
-              style={{ padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--glass-bg)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <MapPin size={12} style={{ color: 'var(--primary)' }} />{city.label}
+              style={{ padding: '10px 14px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#1e293b', fontWeight: '500', transition: '0.2s' }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#f1f5f9';
+                e.currentTarget.style.color = '#2563eb';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = '#1e293b';
+              }}>
+              <MapPin size={14} />{city.label}
             </div>
-          )) : <div style={{ padding: '8px 12px', fontSize: '13px', color: 'var(--text-dim)' }}>Sin resultados</div>}
+          )) : <div style={{ padding: '12px', fontSize: '13px', color: '#64748b', textAlign: 'center' }}>Sin resultados found</div>}
         </div>
       )}
     </div>
@@ -54,7 +60,8 @@ const SearchableCityInput = ({ value, onChange, onSelect, placeholder }: {
 function CodebtorsBasicInfoContent() {
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
-  const [localParticipants, setLocalParticipants] = useState<any[]>([]);
+  const [codebtors, setCodebtors] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -72,26 +79,32 @@ function CodebtorsBasicInfoContent() {
   const [lugarNac, setLugarNac] = useState('');
 
   useEffect(() => {
-    const saved = localStorage.getItem('edunexus_registered_codebtors');
-    const parsed = saved ? JSON.parse(saved) : [];
-    if (parsed.length > 0) {
-      setLocalParticipants(parsed);
-    } else {
-      setLocalParticipants([]);
-    }
+    loadCodebtors();
   }, []);
+
+  const loadCodebtors = async () => {
+    setIsLoading(true);
+    try {
+      const data = await db.list('codebtors');
+      setCodebtors(data);
+    } catch (error) {
+      console.error('Error loading codebtors:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (searchParams.get('openModal') === 'true') setShowModal(true);
   }, [searchParams]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.primerNombre || !form.primerApellido || !form.numeroId) {
       alert('Complete los campos obligatorios (*)');
       return;
     }
     const name = `${form.primerNombre} ${form.segundoNombre} ${form.primerApellido} ${form.segundoApellido}`.trim().replace(/\s+/g, ' ');
-    const newParticipant = {
+    const newCodebtor = {
       id: form.numeroId,
       name: name.toUpperCase(),
       type: 'Codeudor',
@@ -104,39 +117,59 @@ function CodebtorsBasicInfoContent() {
       registrationDate: new Date().toISOString(),
       details: { ...form, lugarNacimiento: lugarNac, residence: residencia, barrio },
     };
-    const updated = [...localParticipants, newParticipant];
-    setLocalParticipants(updated);
-    localStorage.setItem('edunexus_registered_codebtors', JSON.stringify(updated));
-    setRegisterSuccess(true);
-    setTimeout(() => {
-      setShowModal(false);
-      setRegisterSuccess(false);
-      setForm({ primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '', tipoId: '', numeroId: '', sexo: '', correo: '', telefono: '', celular: '', fechaNacimiento: '', direccion: '', tipoCodeudor: '', institucion: '' });
-      setResidencia(''); setBarrio(''); setLugarNac(''); setSelectedCity(null);
-    }, 1500);
+
+    try {
+      const docId = await db.create('codebtors', newCodebtor);
+      setCodebtors(prev => [{ ...newCodebtor, _docId: docId }, ...prev]);
+      setRegisterSuccess(true);
+      setTimeout(() => {
+        setShowModal(false);
+        setRegisterSuccess(false);
+        setForm({ primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '', tipoId: '', numeroId: '', sexo: '', correo: '', telefono: '', celular: '', fechaNacimiento: '', direccion: '', tipoCodeudor: '', institucion: '' });
+        setResidencia(''); setBarrio(''); setLugarNac(''); setSelectedCity(null);
+      }, 1500);
+    } catch (error) {
+       console.error('Error saving codebtor:', error);
+       alert('Error al registrar el codeudor.');
+    }
   };
 
-  const fld = (key: string, label: string) => (
+  const handleDelete = async (docId: string) => {
+    if (!docId) return;
+    if (window.confirm('¿Está seguro de eliminar este codeudor?')) {
+      try {
+        await db.delete('codebtors', docId);
+        setCodebtors(prev => prev.filter(c => c._docId !== docId && c.id !== docId));
+      } catch (error) {
+        console.error('Error deleting codebtor:', error);
+      }
+    }
+  };
+
+  const fld = (key: string, label: string, required: boolean = false) => (
     <div>
-      <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>{label}</label>
-      <input className="input-premium" style={{ width: '100%', fontSize: '13px', height: '38px' }}
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>{label} {required && <span style={{ color: '#ef4444' }}>*</span>}</label>
+      <input className="input-premium" style={{ width: '100%', fontSize: '14px', height: '48px', borderRadius: '14px', background: '#f8fafc', fontWeight: '600', border: '1px solid #e2e8f0' }}
         value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} />
     </div>
   );
 
-  const sel = (key: string, label: string, options: string[]) => (
+  const sel = (key: string, label: string, options: string[], required: boolean = false) => (
     <div>
-      <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>{label}</label>
-      <select className="input-premium" style={{ width: '100%', appearance: 'none', fontSize: '13px', height: '38px' }}
-        value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}>
-        <option value="">Seleccione</option>
-        {options.map(o => <option key={o}>{o}</option>)}
-      </select>
+      <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>{label} {required && <span style={{ color: '#ef4444' }}>*</span>}</label>
+      <div style={{ position: 'relative' }}>
+        <select className="input-premium" style={{ width: '100%', appearance: 'none', fontSize: '14px', height: '48px', borderRadius: '14px', background: '#f8fafc', fontWeight: '600', border: '1px solid #e2e8f0' }}
+          value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}>
+          <option value="">Seleccione</option>
+          {options.map(o => <option key={o}>{o}</option>)}
+        </select>
+        <ChevronDown size={18} style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }} />
+      </div>
     </div>
   );
 
-  const filteredItems = localParticipants.filter((s: any) => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) || s.id.includes(searchTerm);
+  const filteredItems = codebtors.filter((s: any) => {
+    const matchesSearch = (s.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || (s.id || '').includes(searchTerm);
     const matchesActive = includeInactive || s.isActive !== false;
     return matchesSearch && matchesActive;
   });
@@ -149,106 +182,134 @@ function CodebtorsBasicInfoContent() {
   return (
     <DashboardLayout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-1px' }}>Información básica</h1>
-          <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Gestión y consulta de datos generales de codeudores</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+           <div style={{ width: '56px', height: '56px', borderRadius: '18px', background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px -4px rgba(37, 99, 235, 0.2)' }}>
+              <UserCheck size={28} />
+           </div>
+           <div>
+             <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-1.5px' }}>Gestión de Codeudores</h1>
+             <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px', fontWeight: '500' }}>Administración de información básica y solvencia de garantes</p>
+           </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button
-            className="btn-premium"
-            style={{ background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', border: 'none', cursor: 'pointer' }}
-            onClick={() => setShowModal(true)}
-          >
-            <Plus size={18} /> Registrar Codeudor
-          </button>
-        </div>
+        <button
+          className="btn-premium"
+          style={{ background: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', gap: '10px', border: 'none', cursor: 'pointer', padding: '12px 28px', borderRadius: '14px', fontSize: '14px', fontWeight: '800', boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.3)' }}
+          onClick={() => setShowModal(true)}
+        >
+          <Plus size={20} /> Registrar Codeudor
+        </button>
       </div>
 
-      <div className="glass-panel" style={{ padding: '24px', marginBottom: '24px', background: 'white' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-            <input type="text" placeholder="Buscar codeudores..." className="input-premium"
-              style={{ paddingLeft: '48px', height: '48px', background: 'white', width: '100%' }}
-              value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} />
-          </div>
-          <button className="btn-premium" style={{ height: '48px', padding: '0 24px', background: 'var(--primary)', color: 'white' }}>Buscar</button>
-          <button onClick={() => setShowAdvanced(!showAdvanced)}
-            style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '700', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Búsqueda avanzada <ChevronDown size={14} style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
-          </button>
+      <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: '500px' }}>
+           <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+           <input 
+             type="text" 
+             placeholder="Buscar por nombre o identificación..." 
+             className="input-premium"
+             style={{ width: '100%', height: '52px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', paddingLeft: '52px', outline: 'none', fontSize: '14px' }}
+             value={searchTerm} 
+             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+           />
         </div>
-        {showAdvanced && (
-          <div style={{ marginTop: '20px', padding: '20px', borderTop: '1px solid #f3f4f6', display: 'flex', gap: '30px', alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '700', color: '#374151' }}>
-              <input type="checkbox" style={{ width: '18px', height: '18px' }} checked={includeInactive} onChange={(e) => { setIncludeInactive(e.target.checked); setCurrentPage(1); }} />
-              ¿Incluir inactivos?
-            </label>
-          </div>
-        )}
+        <button onClick={() => setShowAdvanced(!showAdvanced)}
+          style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '0 20px', color: '#1e293b', fontWeight: '700', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ChevronDown size={16} style={{ transform: showAdvanced ? 'rotate(180deg)' : 'none', transition: '0.2s' }} /> Filtros Avanzados
+        </button>
       </div>
 
-      <div className="glass-panel" style={{ overflow: 'hidden', background: 'white' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
-              <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '800', textTransform: 'uppercase' }}>Nombre completo</th>
-              <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '800', textTransform: 'uppercase' }}>N° Identificación</th>
-              <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '800', textTransform: 'uppercase' }}>Tipo Codeudor</th>
-              <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '800', textTransform: 'uppercase' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentItems.length > 0 ? (
-              currentItems.map((s: any) => (
-                <tr key={s.id} style={{ borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#f9fafb')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
-                  <td style={{ padding: '14px 24px', color: '#2563eb', fontWeight: '700', fontSize: '14px' }}>{s.name.toUpperCase()}</td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#334155', fontWeight: '500' }}>{s.id}</td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#64748b' }}>{s.tipoCodeudor || 'Externo'}</td>
-                  <td style={{ padding: '14px 24px', textAlign: 'center' }}>
-                    <Link href={`/dashboard/treasury/codebtors/basic-info/${s.id}`}>
-                      <button title="Ver detalles" style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
-                        <Eye size={20} />
-                      </button>
-                    </Link>
+      {showAdvanced && (
+        <div className="glass-panel" style={{ marginBottom: '24px', padding: '24px', background: 'white', border: '1px solid #f1f5f9', borderRadius: '16px', animation: 'fadeIn 0.2s ease-out' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '800', color: '#475569' }}>
+            <input type="checkbox" style={{ width: '20px', height: '20px', borderRadius: '6px', border: '2px solid #cbd5e1' }} checked={includeInactive} onChange={(e) => { setIncludeInactive(e.target.checked); setCurrentPage(1); }} />
+            Mostrar registros inactivos / históricos
+          </label>
+        </div>
+      )}
+
+      <div className="glass-panel" style={{ background: 'white', borderRadius: '24px', border: '1px solid #f1f5f9', overflow: 'hidden', boxShadow: '0 20px 40px -15px rgba(0,0,0,0.05)' }}>
+        {isLoading ? (
+          <div style={{ padding: '80px', textAlign: 'center' }}>
+             <div style={{ width: '40px', height: '40px', border: '3px solid #f3f4f6', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
+             <p style={{ marginTop: '16px', fontWeight: '800', color: '#64748b', fontSize: '14px' }}>Cargando base de datos de codeudores...</p>
+          </div>
+        ) : filteredItems.length > 0 ? (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #f1f5f9' }}>
+                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '11px', color: '#64748b', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Codeudor</th>
+                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '11px', color: '#64748b', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Identificación</th>
+                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '11px', color: '#64748b', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contacto</th>
+                <th style={{ textAlign: 'center', padding: '20px 24px', fontSize: '11px', color: '#64748b', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentItems.map((s: any) => (
+                <tr key={s.id} className="table-row" style={{ borderBottom: '1px solid #f8fafc', transition: '0.2s' }}>
+                  <td style={{ padding: '20px 24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                       <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', position: 'relative' }}>
+                          <UserCheck size={20} />
+                          {s.isActive !== false && <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '12px', height: '12px', background: '#10b981', border: '2px solid white', borderRadius: '50%' }} />}
+                       </div>
+                       <div>
+                          <div style={{ fontWeight: '900', color: '#1e293b', fontSize: '14px' }}>{s.name.toUpperCase()}</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '700', marginTop: '2px' }}>{s.tipoCodeudor || 'Externo'}</div>
+                       </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '20px 24px', fontSize: '14px', color: '#334155', fontWeight: '600' }}>
+                    {s.id}
+                  </td>
+                  <td style={{ padding: '20px 24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                          <Phone size={12} /> {s.telefono || 'Sin registro'}
+                       </div>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                          <Mail size={12} /> {s.correo || 'N/A'}
+                       </div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '20px 24px', textAlign: 'center' }}>
+                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                        <Link href={`/dashboard/treasury/codebtors/basic-info/${s.id}`}>
+                           <button title="Ver detalles" style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f1f5f9', color: '#64748b', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <Eye size={18} />
+                           </button>
+                        </Link>
+                        <button onClick={() => handleDelete(s._docId || s.id)} style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#fff1f2', color: '#e11d48', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                           <Trash2 size={18} />
+                        </button>
+                     </div>
                   </td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} style={{ padding: '100px 40px', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                    <div style={{ background: '#f3f4f6', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-                      <Search size={40} />
-                    </div>
-                    <div>
-                      <h3 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: '0 0 8px 0' }}>No se encontraron codeudores</h3>
-                      <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Intente con otros términos o verifique los filtros.</p>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        {totalPages > 1 && (
-          <div style={{ padding: '24px', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}
-                style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid #e5e7eb', background: 'white', color: currentPage === 1 ? '#cbd5e1' : '#6b7280', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}>
-                <ChevronLeft size={18} />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button key={page} onClick={() => setCurrentPage(page)}
-                  style={{ width: '36px', height: '36px', borderRadius: '8px', background: currentPage === page ? 'var(--primary)' : 'white', color: currentPage === page ? 'white' : '#6b7280', fontWeight: '700', cursor: 'pointer', border: currentPage === page ? 'none' : '1px solid #e5e7eb' }}>
-                  {page}
-                </button>
               ))}
+            </tbody>
+          </table>
+        ) : (
+          <div style={{ padding: '100px 40px', textAlign: 'center' }}>
+            <div style={{ background: '#f8fafc', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1', margin: '0 auto 24px', border: '1px solid #f1f5f9' }}>
+               <Search size={40} strokeWidth={1.5} />
+            </div>
+            <h3 style={{ fontSize: '18px', fontWeight: '900', color: '#111827', margin: '0 0 8px 0' }}>Bandeja vacía</h3>
+            <p style={{ color: '#94a3b8', fontSize: '14px', fontWeight: '500', maxWidth: '300px', margin: '0 auto' }}>
+              No se han encontrado codeudores registrados bajo los criterios de búsqueda actuales.
+            </p>
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div style={{ padding: '24px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center', background: '#f8fafc' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1}
+                style={{ width: '40px', height: '40px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: currentPage === 1 ? '#cbd5e1' : '#64748b', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronLeft size={20} />
+              </button>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#64748b' }}>Página {currentPage} de {totalPages}</div>
               <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages}
-                style={{ width: '36px', height: '36px', borderRadius: '8px', border: '1px solid #e5e7eb', background: 'white', color: currentPage === totalPages ? '#cbd5e1' : '#6b7280', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}>
-                <ChevronRight size={18} />
+                style={{ width: '40px', height: '40px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: currentPage === totalPages ? '#cbd5e1' : '#64748b', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ChevronRight size={20} />
               </button>
             </div>
           </div>
@@ -256,76 +317,96 @@ function CodebtorsBasicInfoContent() {
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '700px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 30px 60px -10px rgba(0,0,0,0.3)' }}>
-            <div style={{ background: 'var(--primary)', padding: '18px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '900', color: 'white', letterSpacing: '-0.5px' }}>Registrar codeudor</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}><X size={22} /></button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'white', borderRadius: '28px', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.45)', animation: 'modalSlide 0.3s ease-out' }}>
+            <div style={{ background: '#2563eb', padding: '24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.2)', padding: '10px', borderRadius: '12px', color: 'white' }}>
+                     <UserCheck size={20} />
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: 'white' }}>Ficha de Registro de Codeudor</h2>
+               </div>
+               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}><X size={26} /></button>
             </div>
 
-            <div style={{ overflowY: 'auto', flex: 1, padding: '28px' }}>
+            <div style={{ overflowY: 'auto', flex: 1, padding: '32px' }}>
               {registerSuccess ? (
-                <div style={{ textAlign: 'center', padding: '50px 20px' }}>
-                  <div style={{ background: '#ecfdf5', color: 'var(--primary)', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                    <Save size={32} />
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                  <div style={{ background: '#f0fdf4', color: '#10b981', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: '0 10px 20px -5px rgba(16, 185, 129, 0.2)' }}>
+                    <UserCheck size={40} />
                   </div>
-                  <h3 style={{ fontSize: '20px', fontWeight: '800', color: '#1e293b', margin: '0 0 8px' }}>¡Registro Exitoso!</h3>
-                  <p style={{ color: '#64748b', margin: 0 }}>El codeudor ha sido guardado correctamente.</p>
+                  <h3 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', margin: '0 0 12px' }}>¡Registro Completo!</h3>
+                  <p style={{ color: '#64748b', margin: 0, fontSize: '16px', fontWeight: '500' }}>La información del codeudor ha sido guardada en Firestore.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  {fld('primerNombre', 'Primer nombre *')}
-                  {fld('segundoNombre', 'Segundo nombre')}
-                  {fld('primerApellido', 'Primer apellido *')}
-                  {fld('segundoApellido', 'Segundo apellido')}
-                  {sel('tipoId', 'Tipo de identificación *', TIPOS_IDENTIFICACION)}
-                  {fld('numeroId', 'Número de identificación *')}
-                  {sel('sexo', 'Sexo *', GENEROS)}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>Correo electrónico *</label>
-                    <input type="email" className="input-premium" style={{ width: '100%', fontSize: '13px', height: '38px' }}
-                      value={form.correo} onChange={e => setForm(p => ({ ...p, correo: e.target.value }))} />
+                <>
+                  <div style={{ padding: '12px 16px', background: '#f8fafc', borderRadius: '12px', borderLeft: '4px solid #2563eb', marginBottom: '24px' }}>
+                     <p style={{ margin: 0, fontSize: '13px', color: '#475569', fontWeight: '600' }}>Ingrese los datos personales y de ubicación para la verificación de solvencia.</p>
                   </div>
-                  {fld('telefono', 'Teléfono *')}
-                  {fld('celular', 'Celular *')}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>Fecha de nacimiento *</label>
-                    <input type="date" className="input-premium" style={{ width: '100%', fontSize: '13px', height: '38px' }}
-                      value={form.fechaNacimiento} onChange={e => setForm(p => ({ ...p, fechaNacimiento: e.target.value }))} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                    {fld('primerNombre', 'Primer nombre', true)}
+                    {fld('segundoNombre', 'Segundo nombre')}
+                    {fld('primerApellido', 'Primer apellido', true)}
+                    {fld('segundoApellido', 'Segundo apellido')}
+                    {sel('tipoId', 'Tipo de identificación', TIPOS_IDENTIFICACION, true)}
+                    {fld('numeroId', 'Número de identificación', true)}
+                    {sel('sexo', 'Sexo', GENEROS, true)}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Correo electrónico <span style={{ color: '#ef4444' }}>*</span></label>
+                      <input type="email" className="input-premium" style={{ width: '100%', fontSize: '14px', height: '48px', borderRadius: '14px', background: '#f8fafc', fontWeight: '600', border: '1px solid #e2e8f0' }}
+                        value={form.correo} onChange={e => setForm(p => ({ ...p, correo: e.target.value }))} />
+                    </div>
+                    {fld('telefono', 'Teléfono')}
+                    {fld('celular', 'Celular', true)}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Fecha de nacimiento</label>
+                      <input type="date" className="input-premium" style={{ width: '100%', fontSize: '14px', height: '48px', borderRadius: '14px', background: '#f8fafc', fontWeight: '600', border: '1px solid #e2e8f0' }}
+                        value={form.fechaNacimiento} onChange={e => setForm(p => ({ ...p, fechaNacimiento: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Lugar de nacimiento</label>
+                      <SearchableCityInput value={lugarNac} onChange={setLugarNac} onSelect={c => setLugarNac(c.label)} placeholder="Municipio..." />
+                    </div>
+                    {fld('direccion', 'Dirección Residencial')}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Lugar de residencia</label>
+                      <SearchableCityInput value={residencia} onChange={setResidencia} onSelect={c => { setResidencia(c.label); setSelectedCity(c); }} placeholder="Municipio..." />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: '900', textTransform: 'uppercase', color: '#94a3b8', marginBottom: '8px' }}>Barrio</label>
+                      <SearchableBarrioInput city={selectedCity ? selectedCity.name : ''} value={barrio} onChange={setBarrio} />
+                    </div>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>Lugar de nacimiento</label>
-                    <SearchableCityInput value={lugarNac} onChange={setLugarNac} onSelect={c => setLugarNac(c.label)} placeholder="Escriba el municipio..." />
-                  </div>
-                  {fld('direccion', 'Dirección')}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>Lugar de residencia</label>
-                    <SearchableCityInput value={residencia} onChange={setResidencia} onSelect={c => { setResidencia(c.label); setSelectedCity(c); }} placeholder="Escriba el municipio..." />
-                  </div>
-                                    <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '4px' }}>Barrio</label>
-                    <SearchableBarrioInput city={selectedCity ? selectedCity.name : ''} value={barrio} onChange={setBarrio} />
-                  </div>
-                </div>
+                </>
               )}
             </div>
 
             {!registerSuccess && (
-              <div style={{ padding: '16px 28px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '12px', background: '#fafafa', borderRadius: '0 0 20px 20px' }}>
-                <button onClick={() => setShowModal(false)} style={{ padding: '10px 24px', borderRadius: '10px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '700', cursor: 'pointer', fontSize: '14px' }}>Cancelar</button>
-                <button onClick={handleSave} style={{ padding: '10px 28px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: '800', cursor: 'pointer', fontSize: '14px' }}>Aceptar</button>
+              <div style={{ padding: '24px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '16px', background: '#f8fafc' }}>
+                <button onClick={() => setShowModal(false)} style={{ padding: '12px 28px', borderRadius: '12px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: '800', cursor: 'pointer' }}>Cancelar</button>
+                <button onClick={handleSave} style={{ padding: '12px 32px', borderRadius: '12px', border: 'none', background: '#2563eb', color: 'white', fontWeight: '900', cursor: 'pointer', boxShadow: '0 8px 16px -4px rgba(37, 99, 235, 0.3)' }}>Aceptar y Guardar</button>
               </div>
             )}
           </div>
         </div>
       )}
+      
+      <style jsx global>{`
+        .input-premium:focus { border-color: #2563eb !important; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1) !important; background: white !important; }
+        .table-row:hover { background-color: #f8fafc !important; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes modalSlide { from { opacity: 0; transform: translateY(30px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </DashboardLayout>
   );
 }
 
 export default function CodebtorsBasicInfoPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '40px', textAlign: 'center' }}>Cargando información básica de codeudores...</div>}>
+    <Suspense fallback={<div style={{ padding: '80px', textAlign: 'center' }}>
+       <div style={{ width: '40px', height: '40px', border: '3px solid #f3f4f6', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
+    </div>}>
       <CodebtorsBasicInfoContent />
     </Suspense>
   );

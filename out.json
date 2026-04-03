@@ -1,0 +1,110 @@
+{
+  "cursos": [
+    {
+      "id": "curso-sj-10a-2026",
+      "docenteNombre": "Carlos Pérez García",
+      "cuposOcupados": 1,
+      "estado": "Activo",
+      "programaId": "prog-sj-bach",
+      "fechaFin": "2026-06-30",
+      "sedeJornada": "sede-sj-principal::jor-sj-manana",
+      "programaNombre": "Bachillerato Académico",
+      "docenteId": "docente-sanjose-001",
+      "cupoMaximo": "35",
+      "codigo": "10A-MAT-2026",
+      "createdAt": 1774820247261,
+      "asignaturaNombre": "Matemáticas",
+      "periodo": "2026 - 01",
+      "sedeJornadaLabel": "SEDE PRINCIPAL SAN JOSÉ - Mañana",
+      "nombre": "Grado 10° A - Matemáticas",
+      "asignaturaId": "sub-sj-mat",
+      "fechaInicio": "2026-01-15"
+    },
+    {
+      "id": "curso-sj-10a-cie",
+      "programaId": "prog-sj-bach",
+      "sedeJornada": "sede-sj-principal::jor-sj-manana",
+      "cupoMaximo": "30",
+      "programaNombre": "Bachillerato Académico",
+      "docenteId": "doc-sj-sec-01",
+      "docenteNombre": "Javier Antonio Ramírez",
+      "cuposOcupados": 2,
+      "estado": "Activo",
+      "nombre": "10° A - Ciencias Naturales",
+      "sedeJornadaLabel": "SEDE PRINCIPAL SAN JOSÉ - Mañana",
+      "periodo": "2026 - 01",
+      "asignaturaId": "sub-sj-cie",
+      "codigo": "10A-CIE",
+      "createdAt": 1775140353056
+    },
+    {
+      "id": "curso-sj-10a-ing",
+      "docenteNombre": "Carlos Pérez García",
+      "cuposOcupados": 2,
+      "estado": "Activo",
+      "programaId": "prog-sj-bach",
+      "sedeJornada": "sede-sj-principal::jor-sj-manana",
+      "cupoMaximo": "30",
+      "docenteId": "docente-sanjose-001",
+      "programaNombre": "Bachillerato Académico",
+      "codigo": "10A-ING",
+      "createdAt": 1775140353056,
+      "nombre": "10° A - Inglés",
+      "sedeJornadaLabel": "SEDE PRINCIPAL SAN JOSÉ - Mañana",
+      "periodo": "2026 - 01",
+      "asignaturaId": "sub-sj-ing"
+    }
+  ],
+  "grupos": [
+    {
+      "id": "grupo-sj-10a-2026",
+      "estado": "Activo",
+      "createdAt": 1775140353056,
+      "codigo": "GRP-10A",
+      "cupoMaximo": "30",
+      "nombre": "Grupo 10° A",
+      "estudiantes": [
+        "stud-sj-decimo-01",
+        "stud-sanjose-001"
+      ],
+      "periodo": "2026 - 01",
+      "programaId": "prog-sj-bach"
+    },
+    {
+      "id": "grupo-sj-5a-2026",
+      "codigo": "5A-PRIM",
+      "periodoId": "period_2026_01",
+      "estado": "Activo",
+      "programaId": "prog_prim_fallback",
+      "sedeId": "sede-sj-principal",
+      "nombre": "Quinto A (Primaria)",
+      "estudiantes": [
+        "stud-sj-prim-1"
+      ],
+      "cursoId": "curso-sj-prim-01",
+      "cupoMaximo": "25"
+    }
+  ],
+  "students": [
+    {
+      "id": "stud-sanjose-001",
+      "grupoId": "grupo-sj-10a-2026",
+      "programId": "prog-sj-bach"
+    },
+    {
+      "id": "stud-sj-decimo-01",
+      "grupoId": "grupo-sj-10a-2026",
+      "programId": "prog-sj-bach"
+    },
+    {
+      "id": "stud-sj-sexto-01",
+      "grupoId": "grupo-sj-6a-2026",
+      "programId": "prog-sj-bach"
+    },
+    {
+      "id": "stud-sj-sexto-02",
+      "grupoId": "grupo-sj-6a-2026",
+      "programId": "prog-sj-bach"
+    }
+  ]
+}

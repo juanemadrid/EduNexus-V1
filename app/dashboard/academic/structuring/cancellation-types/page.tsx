@@ -1,7 +1,8 @@
 'use client';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, X, Edit, Trash2, Search } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
 const INITIAL_TYPES = [
   { id: 'ct-1', codigo: 'VOL', nombre: 'Cancelación Voluntaria', descripcion: 'El estudiante solicita cancelación por iniciativa propia', estado: 'Activo' },
@@ -18,24 +19,66 @@ export default function CancellationTypesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ codigo: '', nombre: '', descripcion: '', estado: 'Activo' });
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  const loadItems = async () => {
+    setIsInitialLoading(true);
+    try {
+      const data = await db.list<any>('cancellation_types');
+      setItems(data.length > 0 ? data : INITIAL_TYPES);
+    } catch (error) {
+       console.error("Error loading cancellation types:", error);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const saved = localStorage.getItem('edunexus_cancellation_types');
-    if (saved) { setItems(JSON.parse(saved)); }
-    else { setItems(INITIAL_TYPES); localStorage.setItem('edunexus_cancellation_types', JSON.stringify(INITIAL_TYPES)); }
+    loadItems();
   }, []);
 
-  const save = (updated: any[]) => { setItems(updated); localStorage.setItem('edunexus_cancellation_types', JSON.stringify(updated)); };
+  // localStorage side effects removed
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.codigo || !form.nombre) { alert('Complete los campos obligatorios (*)'); return; }
-    const item = { id: isEditing && editingId ? editingId : `ct-${Date.now()}`, ...form };
-    save(isEditing && editingId ? items.map(i => i.id === editingId ? item : i) : [item, ...items]);
-    closeModal();
+    
+    setIsLoading(true);
+    try {
+      const id = isEditing && editingId ? editingId : crypto.randomUUID();
+      const item = { id, ...form };
+      
+      if (isEditing && editingId) {
+        await db.update('cancellation_types', id, item);
+        setItems(items.map(i => i.id === editingId ? item : i));
+      } else {
+        await db.create('cancellation_types', item);
+        setItems([item, ...items]);
+      }
+      closeModal();
+    } catch (error) {
+       console.error("Error saving cancellation type:", error);
+       alert("Error al guardar el tipo de cancelación.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const closeModal = () => { setShowModal(false); setIsEditing(false); setEditingId(null); setForm({ codigo: '', nombre: '', descripcion: '', estado: 'Activo' }); };
   const handleEdit = (i: any) => { setForm({ codigo: i.codigo, nombre: i.nombre, descripcion: i.descripcion || '', estado: i.estado }); setEditingId(i.id); setIsEditing(true); setShowModal(true); };
-  const handleDelete = (id: string) => { if (confirm('¿Eliminar este tipo?')) save(items.filter(i => i.id !== id)); };
+  const handleDelete = async (id: string) => {
+    if (confirm('¿Eliminar este tipo?')) {
+      setIsLoading(true);
+      try {
+        await db.delete('cancellation_types', id);
+        setItems(items.filter(i => i.id !== id));
+      } catch (error) {
+        console.error("Error deleting cancellation type:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
 
   const filtered = items.filter(i => i.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) || i.codigo?.toLowerCase().includes(searchTerm.toLowerCase()));
 

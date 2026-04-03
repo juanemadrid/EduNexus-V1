@@ -100,7 +100,7 @@ export default function AttendanceScanner() {
       
       // If not found by ID, try querying by numeroId field
       if (!student) {
-        const students = await db.list<any>('students', { id: studentId });
+        const students = await db.list<any>('registered_students', { id: studentId });
         if (students.length > 0) student = students[0];
       }
 

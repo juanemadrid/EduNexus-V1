@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import DateRangePicker from '@/components/DateRangePicker';
 import React, { useState, useEffect } from 'react';
 import { FileDown } from 'lucide-react';
+import { db } from '@/lib/db';
 
 export default function InscritosAunNoMatriculadosPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,8 +17,8 @@ export default function InscritosAunNoMatriculadosPage() {
   const [touched, setTouched] = useState({ periodo: false, fechaRango: false });
 
   useEffect(() => {
-    const savedPrograms = localStorage.getItem('edunexus_academic_programs_data');
-    if (savedPrograms) setPrograms(JSON.parse(savedPrograms));
+    // Fetch programs from Firestore with caching
+    db.list('academic_programs', null, { cache: true }).then(setPrograms).catch(console.error);
   }, []);
 
   const handleCharge = () => {

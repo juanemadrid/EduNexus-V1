@@ -1,0 +1,137 @@
+[
+  {
+    "name": "Cuarto (4°)",
+    "code": "07",
+    "order": 8,
+    "status": "Activo",
+    "createdAt": 1775152692211,
+    "category": "Básica Primaria",
+    "id": "nivel-cuarto"
+  },
+  {
+    "code": "13",
+    "name": "Décimo (10°)",
+    "status": "Activo",
+    "category": "Media",
+    "createdAt": 1775152693345,
+    "id": "nivel-decimo",
+    "order": 14
+  },
+  {
+    "status": "Activo",
+    "category": "Preescolar",
+    "createdAt": 1775152691338,
+    "id": "nivel-jardin",
+    "order": 3,
+    "code": "02",
+    "name": "Jardín"
+  },
+  {
+    "name": "Noveno (9°)",
+    "code": "12",
+    "order": 13,
+    "status": "Activo",
+    "createdAt": 1775152693156,
+    "category": "Básica Secundaria",
+    "id": "nivel-noveno"
+  },
+  {
+    "name": "Octavo (8°)",
+    "code": "11",
+    "order": 12,
+    "status": "Activo",
+    "category": "Básica Secundaria",
+    "createdAt": 1775152693020,
+    "id": "nivel-octavo"
+  },
+  {
+    "code": "14",
+    "name": "Once (11°)",
+    "status": "Activo",
+    "id": "nivel-once",
+    "createdAt": 1775152693489,
+    "category": "Media",
+    "order": 15
+  },
+  {
+    "name": "Párvulos",
+    "code": "00",
+    "order": 1,
+    "id": "nivel-parvulos",
+    "category": "Preescolar",
+    "createdAt": 1775152690473,
+    "status": "Activo"
+  },
+  {
+    "code": "01",
+    "name": "Prejardín",
+    "status": "Activo",
+    "id": "nivel-prejardin",
+    "createdAt": 1775152691154,
+    "category": "Preescolar",
+    "order": 2
+  },
+  {
+    "id": "nivel-primero",
+    "category": "Básica Primaria",
+    "createdAt": 1775152691676,
+    "status": "Activo",
+    "order": 5,
+    "code": "04",
+    "name": "Primero (1°)"
+  },
+  {
+    "status": "Activo",
+    "id": "nivel-quinto",
+    "category": "Básica Primaria",
+    "createdAt": 1775152692378,
+    "order": 9,
+    "code": "08",
+    "name": "Quinto (5°)"
+  },
+  {
+    "order": 6,
+    "id": "nivel-segundo",
+    "category": "Básica Primaria",
+    "createdAt": 1775152691847,
+    "status": "Activo",
+    "name": "Segundo (2°)",
+    "code": "05"
+  },
+  {
+    "code": "10",
+    "name": "Séptimo (7°)",
+    "id": "nivel-septimo",
+    "createdAt": 1775152692730,
+    "category": "Básica Secundaria",
+    "status": "Activo",
+    "order": 11
+  },
+  {
+    "id": "nivel-sexto",
+    "createdAt": 1775152692554,
+    "category": "Básica Secundaria",
+    "status": "Activo",
+    "order": 10,
+    "code": "09",
+    "name": "Sexto (6°)"
+  },
+  {
+    "name": "Tercero (3°)",
+    "code": "06",
+    "order": 7,
+    "status": "Activo",
+    "id": "nivel-tercero",
+    "category": "Básica Primaria",
+    "createdAt": 1775152692030
+  },
+  {
+    "order": 4,
+    "status": "Activo",
+    "id": "nivel-transicion",
+    "category": "Preescolar",
+    "createdAt": 1775152691509,
+    "name": "Transición",
+    "code": "03"
+  }
+]

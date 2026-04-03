@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import DateRangePicker from '@/components/DateRangePicker';
 import { FileSpreadsheet, Search, ChevronDown, UserCheck, Calendar, Info, Download, ArrowLeftRight } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
 export default function ConsolidadoAsistenciasIndividualesPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -30,21 +31,32 @@ export default function ConsolidadoAsistenciasIndividualesPage() {
     fechaRango: 'Hoy'
   });
 
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  const loadInitialData = async () => {
+    setIsInitialLoading(true);
+    try {
+      const [sedesData, programsData, cursosData, gruposData, studentsData] = await Promise.all([
+        db.list<any>('sedes'),
+        db.list<any>('academic_programs'),
+        db.list<any>('cursos'),
+        db.list<any>('grupos'),
+        db.list<any>('students')
+      ]);
+      setAllSedes(sedesData);
+      setAllPrograms(programsData);
+      setAllCursos(cursosData);
+      setAllGrupos(gruposData);
+      setAllStudents(studentsData);
+    } catch (error) {
+       console.error("Error loading consolidated attendance data:", error);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const savedSedes = localStorage.getItem('edunexus_sedes');
-    if (savedSedes) setAllSedes(JSON.parse(savedSedes));
-
-    const savedPrograms = localStorage.getItem('edunexus_academic_programs');
-    if (savedPrograms) setAllPrograms(JSON.parse(savedPrograms));
-
-    const savedCursos = localStorage.getItem('edunexus_cursos');
-    if (savedCursos) setAllCursos(JSON.parse(savedCursos));
-
-    const savedGrupos = localStorage.getItem('edunexus_grupos');
-    if (savedGrupos) setAllGrupos(JSON.parse(savedGrupos));
-
-    const savedStudents = localStorage.getItem('edunexus_registered_students');
-    if (savedStudents) setAllStudents(JSON.parse(savedStudents));
+    loadInitialData();
   }, []);
 
   // Cascading Logic
@@ -74,7 +86,7 @@ export default function ConsolidadoAsistenciasIndividualesPage() {
     setFilteredCursos(matched);
   };
 
-  const handleConsult = () => {
+  const handleConsult = async () => {
     if (!form.cursoId) {
       alert('Por favor seleccione un curso');
       return;
@@ -82,7 +94,7 @@ export default function ConsolidadoAsistenciasIndividualesPage() {
     setIsLoading(true);
     setHasSearched(true);
 
-    setTimeout(() => {
+    try {
       // Find the group for this course
       const group = allGrupos.find(g => g.id === form.cursoId || g.cursoId === form.cursoId);
       
@@ -91,7 +103,7 @@ export default function ConsolidadoAsistenciasIndividualesPage() {
         const enrolledStudents = allStudents.filter(s => studentIds.includes(s.id));
         
         // Load REAL attendance data
-        const savedRecords = JSON.parse(localStorage.getItem('edunexus_attendance_records') || '[]');
+        const savedRecords = await db.list<any>('attendance_records');
         const courseRecords = savedRecords.filter((r: any) => r.cursoId === form.cursoId);
 
         const mapped = enrolledStudents.map(s => {
@@ -121,8 +133,11 @@ export default function ConsolidadoAsistenciasIndividualesPage() {
       } else {
         setResults([]);
       }
+    } catch (error) {
+       console.error("Error generating consolidated report:", error);
+    } finally {
       setIsLoading(false);
-    }, 1200);
+    }
   };
 
   const handleExport = () => {

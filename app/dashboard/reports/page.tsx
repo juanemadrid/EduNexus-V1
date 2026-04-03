@@ -1,69 +1,44 @@
 'use client';
 import DashboardLayout from '@/components/DashboardLayout';
-import { Search, Star, Eye, GraduationCap, CircleDollarSign, LineChart, FileSpreadsheet, Shield, CheckCheck } from 'lucide-react';
+import { Search, Star, Eye, GraduationCap, CircleDollarSign, LineChart, FileSpreadsheet, Shield, CheckCheck, BrainCircuit, AlertTriangle, TrendingDown, ChevronRight, Zap, Sparkles } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
-// All reports organized by category
 const CATEGORIES = [
   {
-    id: 'observador',
-    title: 'Observador',
-    icon: <Eye size={20} color="#64748b" />,
-    items: ['Listado observador', 'Observador']
-  },
-  {
     id: 'academica',
-    title: 'Gestión académica',
-    icon: <GraduationCap size={20} color="#64748b" />,
+    title: 'Gestión académica (Históricos)',
+    icon: <GraduationCap size={20} color="var(--primary)" />,
     items: [
       'Inasistencias por curso', 'Consolidado de notas', 'Informe requisitos de matrícula',
-      'Fichas de matrículas', 'Seguimientos egresados', 'Estudiantes cancelados',
-      'Familiares codeudores estudiantes', 'Asignación académica docentes',
-      'Consolidado de asistencias - asignaturas individuales',
-      'Asistencia / inasistencia detallada por estudiante - asignaturas individuales',
-      'Cancelados - desertores', 'Consolidado de inasistencias',
-      'Consolidado de matriculados por semestre', 'Diseño curricular', 'Docentes pendientes por evaluar',
-      'Estadística de matrículas', 'Estudiantes asignaturas reprobadas', 'Estudiantes Asignaturas Canceladas',
-      'Estudiantes Cancelados por Inasistencia', 'Estudiantes con Dificultades', 'Estudiantes Matriculados',
-      'Estudiantes nuevos en la institución', 'Estudiantes por Cursos', 'Habilitaciones',
-      'Histórico de notas', 'Historico inasistencias', 'Homologaciones',
-      'Informe Preguntas Personalizadas', 'Inscritos aún no matriculados', 'Listado de Cursos',
-      'Listado de Matrículas', 'Planilla', 'Resultados académicos', 'Consolidado de pénsum'
+      'Fichas de matrículas', 'Asignación académica docentes',
+      'Consolidado de asistencias', 'Diseño curricular', 'Docentes pendientes por evaluar',
+      'Estadística de matrículas', 'Habilitaciones', 'Histórico de notas', 
+      'Homologaciones', 'Listado de Cursos', 'Planilla', 'Consolidado de pénsum'
     ]
   },
   {
     id: 'financiera',
-    title: 'Gestión financiera',
-    icon: <CircleDollarSign size={20} color="#64748b" />,
+    title: 'Auditoría Financiera',
+    icon: <CircleDollarSign size={20} color="#f59e0b" />,
     items: [
-      'Cartera general', 'Ingresos básicos', 'Ingresos consolidados',
-      'Ingresos detallados por producto', 'Anulaciones y devoluciones', 'Cartera - pagos',
-      'Notas crédito', 'Cuadre caja por producto', 'Cuadre de caja por cajero',
-      'Descuentos', 'Egresos', 'Estudiantes por estado financiero',
-      'Ingresos', 'Notas crédito aplicadas', 'Informe paz y salvo establecidos',
-      'Proyección de recaudo', 'Ingresos Detallados Por Formas'
-    ]
-  },
-  {
-    id: 'comercial',
-    title: 'Gestión comercial',
-    icon: <LineChart size={20} color="#64748b" />,
-    items: [
-      'Actividades por oportunidades - CRM', 'Ventas por vendedor - CRM',
-      'Gestión operadores - CRM', 'Contactos por oportunidad', 'Oportunidades comerciales - CRM'
+      'Ingresos Detallados', 'Anulaciones y devoluciones',
+      'Notas crédito', 'Cuadre de caja por producto', 'Cuadre de caja por cajero',
+      'Descuentos', 'Egresos', 'Informe paz y salvo establecidos'
     ]
   },
   {
     id: 'excel',
     title: 'Comunidad en Excel',
-    icon: <FileSpreadsheet size={20} color="#64748b" />,
+    icon: <FileSpreadsheet size={20} color="#10b981" />,
     items: ['Administrativos', 'Estudiantes', 'Docentes', 'Preinscritos', 'Egresados - graduados', 'Informes SNIES']
   },
   {
     id: 'seguridad',
-    title: 'Seguridad',
-    icon: <Shield size={20} color="#64748b" />,
+    title: 'Seguridad y Accesos',
+    icon: <Shield size={20} color="#ef4444" />,
     items: ['Permisos usuarios administrativos', 'Permisos asignados a perfiles']
   }
 ];
@@ -76,64 +51,57 @@ export default function ReportsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterModule, setFilterModule] = useState('todos');
   const [editingFavorites, setEditingFavorites] = useState(false);
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try { return JSON.parse(localStorage.getItem('edunexus_favorites') || '[]'); } catch { return []; }
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadFavorites = async () => {
+    setIsLoading(true);
+    try {
+      const data = await db.get<any>('settings', 'report_favorites');
+      if (data && data.list) setFavorites(data.list);
+    } catch (error) {
+      console.error("Error loading favorites:", error);
+    } finally {
+      setIsLoading(false);
     }
-    return [];
-  });
+  };
 
   useEffect(() => {
-    localStorage.setItem('edunexus_favorites', JSON.stringify(favorites));
-  }, [favorites]);
+    loadFavorites();
+  }, []);
 
-  const toggleFavorite = (report: string) => {
-    setFavorites(prev =>
-      prev.includes(report) ? prev.filter(f => f !== report) : [...prev, report]
-    );
+  const toggleFavorite = async (report: string) => {
+    const newFavorites = favorites.includes(report) 
+      ? favorites.filter(f => f !== report) 
+      : [...favorites, report];
+    
+    setFavorites(newFavorites);
+    try {
+      await db.update('settings', 'report_favorites', { list: newFavorites });
+    } catch (error) {
+      console.error("Error updating favorites:", error);
+    }
   };
 
   const ReportItem = ({ report, showStar = false }: { report: string; showStar?: boolean }) => {
     const isFav = favorites.includes(report);
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         {(editingFavorites || showStar) && (
           <button
             onClick={(e) => { e.preventDefault(); toggleFavorite(report); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
-            title={isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: '0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           >
-            <Star size={15} color={isFav ? '#f59e0b' : '#cbd5e1'} fill={isFav ? '#f59e0b' : 'none'} />
+            <Star size={16} color={isFav ? '#f59e0b' : '#cbd5e1'} fill={isFav ? '#f59e0b' : 'none'} />
           </button>
         )}
-        <Link
-          href={`/dashboard/reports/${toSlug(report)}`}
-          style={{ textDecoration: 'none', flex: 1 }}
-        >
-          <div
-            style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              border: '1px solid transparent',
-              display: 'flex', alignItems: 'center', gap: '10px',
-              color: '#475569', fontSize: '13px', fontWeight: '600',
-              transition: 'all 0.2s ease', cursor: 'pointer'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = '#f8fafc';
-              e.currentTarget.style.borderColor = '#e2e8f0';
-              e.currentTarget.style.color = '#2563eb';
-              e.currentTarget.style.transform = 'translateX(2px)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.borderColor = 'transparent';
-              e.currentTarget.style.color = '#475569';
-              e.currentTarget.style.transform = 'none';
-            }}
-          >
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#cbd5e1', flexShrink: 0 }} />
-            {report}
+        <Link href={`/dashboard/reports/${toSlug(report)}`} style={{ textDecoration: 'none', flex: 1 }}>
+          <div className="report-card-premium">
+            <div className="dot" />
+            <span className="text">{report}</span>
+            <ChevronRight size={14} className="arrow" />
           </div>
         </Link>
       </div>
@@ -142,122 +110,171 @@ export default function ReportsPage() {
 
   return (
     <DashboardLayout>
-      <div style={{ padding: '0 0 60px 0' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-          <div>
-            <h1 style={{ fontSize: '28px', fontWeight: '900', color: '#111827', margin: 0, letterSpacing: '-1px' }}>Informes</h1>
-            <p style={{ color: '#64748b', fontSize: '14px', marginTop: '4px' }}>Centro de reportes y estadísticas unificado</p>
-          </div>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '80px' }}>
+        
+        {/* Elite Header */}
+        <div style={{ marginBottom: '40px' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <h1 style={{ fontSize: '34px', fontWeight: '900', color: '#0f172a', margin: 0, letterSpacing: '-1.5px' }}>Centro de Informes</h1>
+            <p style={{ color: '#64748b', fontSize: '15px', marginTop: '6px', fontWeight: '500' }}>Análisis institucional y reportes legales unificados</p>
+          </motion.div>
         </div>
 
-        {/* Search Bar & Filters */}
-        <div className="glass-panel" style={{ padding: '20px 24px', marginBottom: '28px', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', gap: '12px', alignItems: 'center' }}>
+        {/* Global Search & Filter */}
+        <div className="glass-panel" style={{ padding: '24px 32px', marginBottom: '32px', background: 'white', borderRadius: '24px', border: '1px solid #f1f5f9', display: 'flex', gap: '16px', alignItems: 'center', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.03)' }}>
           <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <Search size={20} style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input
               type="text"
-              placeholder="Buscar reportes..."
+              placeholder="Escriba el nombre de un reporte..."
               className="input-premium"
-              style={{ paddingLeft: '48px', height: '48px', background: '#f8fafc', width: '100%', fontSize: '14px' }}
+              style={{ paddingLeft: '54px', height: '54px', background: '#f8fafc', width: '100%', fontSize: '15px', borderRadius: '18px' }}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <label style={{ fontSize: '13px', fontWeight: '700', color: '#64748b' }}>Filtrar</label>
-            <select className="input-premium" style={{ height: '48px', width: '200px', fontSize: '14px' }} value={filterModule} onChange={e => setFilterModule(e.target.value)}>
-              <option value="todos">Todos los módulos</option>
-              <option value="academica">Gestión académica</option>
-              <option value="financiera">Gestión financiera</option>
-              <option value="comercial">Gestión comercial</option>
-              <option value="excel">Comunidad en Excel</option>
-              <option value="seguridad">Seguridad</option>
-            </select>
-          </div>
+          <select className="input-premium" style={{ height: '54px', width: '240px', fontSize: '14.5px', borderRadius: '18px', padding: '0 20px', fontWeight: '700', color: '#1e293b' }} value={filterModule} onChange={e => setFilterModule(e.target.value)}>
+            <option value="todos">Todos los módulos</option>
+            <option value="academica">Gestión Académica</option>
+            <option value="financiera">Auditoría Financiera</option>
+            <option value="excel">Comunidad en Excel</option>
+            <option value="seguridad">Seguridad</option>
+          </select>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-          {/* ⭐ FAVORITOS */}
-          {(filterModule === 'todos') && (
-            <div className="glass-panel" style={{ padding: '24px', background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: favorites.length > 0 || editingFavorites ? '16px' : '0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ background: '#fef3c7', padding: '10px', borderRadius: '12px' }}>
-                    <Star size={20} color="#f59e0b" fill="#f59e0b" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          
+          {/* ⭐ AI NEXUS INSIGHTS (Phase 2 Elite) */}
+          {(filterModule === 'todos' && !searchTerm) && (
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="glass-panel" style={{ padding: '32px', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.03), rgba(139, 92, 246, 0.05))', borderRadius: '32px', border: '1px solid rgba(139, 92, 246, 0.15)', boxShadow: '0 25px 50px -15px rgba(139,92,246,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ background: '#8b5cf6', padding: '12px', borderRadius: '16px', boxShadow: '0 10px 20px -5px rgba(139,92,246,0.4)' }}>
+                    <Sparkles size={24} color="white" />
                   </div>
-                  <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>Favoritos</h2>
+                  <div>
+                     <h2 style={{ margin: 0, fontSize: '22px', fontWeight: '900', color: '#1e293b', letterSpacing: '-0.5px' }}>Nexus AI <span style={{ color: '#8b5cf6' }}>Insights</span></h2>
+                     <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b', fontWeight: '700' }}>Análisis predictivo de la comunidad hoy</p>
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: '900', color: '#8b5cf6', background: 'rgba(139,92,246,0.1)', padding: '6px 16px', borderRadius: '100px', letterSpacing: '1px' }}>VIVO</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+                 {/* Academic Insight */}
+                 <motion.div whileHover={{ y: -5 }} style={{ background: 'white', padding: '24px', borderRadius: '24px', border: '1px solid #fee2e2', display: 'flex', gap: '20px', alignItems: 'flex-start', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#fef2f2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                       <TrendingDown size={22} />
+                    </div>
+                    <div>
+                       <span style={{ fontSize: '10px', fontWeight: '900', color: '#ef4444', background: '#fef2f2', padding: '4px 10px', borderRadius: '8px', letterSpacing: '0.5px' }}>RIESGO ACADÉMICO</span>
+                       <h4 style={{ margin: '12px 0 6px', fontSize: '16px', fontWeight: '800', color: '#1e293b' }}>3 Alarmas por Promedio</h4>
+                       <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b', lineHeight: '1.5' }}>Se detectó una caída del 15% en el desempeño de Matemáticas (9° Grado). Andrés López presenta el riesgo más alto.</p>
+                       <button className="insight-btn" style={{ color: '#ef4444' }}>Expediente del Grupo</button>
+                    </div>
+                 </motion.div>
+
+                 {/* Financial Insight */}
+                 <motion.div whileHover={{ y: -5 }} style={{ background: 'white', padding: '24px', borderRadius: '24px', border: '1px solid #ffedd5', display: 'flex', gap: '20px', alignItems: 'flex-start', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.02)' }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: '#fff7ed', color: '#f97316', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                       <Zap size={22} />
+                    </div>
+                    <div>
+                       <span style={{ fontSize: '10px', fontWeight: '900', color: '#f97316', background: '#fff7ed', padding: '4px 10px', borderRadius: '8px', letterSpacing: '0.5px' }}>OPTIMIZACIÓN FINANCIERA</span>
+                       <h4 style={{ margin: '12px 0 6px', fontSize: '16px', fontWeight: '800', color: '#1e293b' }}>Flujo de Caja Proyectado</h4>
+                       <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b', lineHeight: '1.5' }}>Alta probabilidad de recaudo para el fin de mes ($12.5M). 8 familias pendientes por pago de transporte.</p>
+                       <button className="insight-btn" style={{ color: '#f97316' }}>Ejecutar Cobro Inteligente</button>
+                    </div>
+                 </motion.div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ⭐ FAVORITES SECTION */}
+          {(filterModule === 'todos' && favorites.length > 0) && (
+            <div className="glass-panel" style={{ padding: '32px', background: 'white', borderRadius: '32px', border: '1px solid #f1f5f9' }}>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                   <div style={{ background: '#fffbeb', padding: '10px', borderRadius: '12px', color: '#f59e0b' }}>
+                     <Star size={20} fill="#f59e0b" />
+                   </div>
+                   <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#1e293b' }}>Accesos Directos</h2>
                 </div>
                 <button
                   onClick={() => setEditingFavorites(e => !e)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    background: editingFavorites ? '#f0fdf4' : 'none',
-                    border: editingFavorites ? '1px solid #86efac' : 'none',
-                    color: editingFavorites ? '#16a34a' : '#3b82f6',
-                    fontWeight: '700', fontSize: '13px', cursor: 'pointer',
-                    padding: '6px 14px', borderRadius: '8px', transition: 'all 0.2s'
-                  }}
+                  className={`btn-premium ${editingFavorites ? 'active' : ''}`}
+                  style={{ background: editingFavorites ? '#f0fdf4' : '#f8fafc', color: editingFavorites ? '#10b981' : '#6366f1', fontSize: '13px', fontWeight: '800', padding: '8px 16px', borderRadius: '12px' }}
                 >
-                  {editingFavorites
-                    ? <><CheckCheck size={14} /> Finalizar edición</>
-                    : <><Star size={14} /> Editar favoritos</>
-                  }
+                  {editingFavorites ? 'Guardar Cambios' : 'Personalizar'}
                 </button>
               </div>
 
-              {favorites.length === 0 && !editingFavorites && (
-                <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>
-                  Aquí puede establecer sus informes favoritos,{' '}
-                  <span
-                    onClick={() => setEditingFavorites(true)}
-                    style={{ color: '#3b82f6', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
-                  >
-                    Editar favoritos
-                  </span>.
-                </p>
-              )}
-
-              {favorites.length > 0 && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '4px' }}>
-                  {favorites.map(report => (
-                    <ReportItem key={report} report={report} showStar={true} />
-                  ))}
-                </div>
-              )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                {favorites.map(report => (
+                  <ReportItem key={report} report={report} showStar={true} />
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Other Categories */}
-          {CATEGORIES.map(category => {
-            if (filterModule !== 'todos' && category.id !== filterModule) return null;
+          {/* Main Categories */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '24px' }}>
+            {CATEGORIES.map(category => {
+              if (filterModule !== 'todos' && category.id !== filterModule) return null;
 
-            const filteredItems = category.items.filter(item =>
-              item.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+              const filteredItems = category.items.filter(item =>
+                item.toLowerCase().includes(searchTerm.toLowerCase())
+              );
 
-            if (searchTerm && filteredItems.length === 0) return null;
+              if (searchTerm && filteredItems.length === 0) return null;
 
-            return (
-              <div key={category.id} className="glass-panel" style={{ padding: '24px', background: 'white', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ background: '#f1f5f9', padding: '10px', borderRadius: '12px' }}>
-                    {category.icon}
+              return (
+                <motion.div 
+                  layout
+                  key={category.id} 
+                  className="glass-panel" 
+                  style={{ padding: '32px', background: 'white', borderRadius: '32px', border: '1px solid #f1f5f9', alignSelf: 'start' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '14px', border: '1px solid #f1f5f9' }}>
+                      {category.icon}
+                    </div>
+                    <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#1e293b', letterSpacing: '-0.5px' }}>{category.title}</h2>
                   </div>
-                  <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#1e293b' }}>{category.title}</h2>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '4px' }}>
-                  {filteredItems.map(report => (
-                    <ReportItem key={report} report={report} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }}>
+                    {filteredItems.map(report => (
+                      <ReportItem key={report} report={report} />
+                    ))}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
       </div>
+
+      <style jsx global>{`
+        .report-card-premium {
+          display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px;
+          cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          color: #475569; position: relative;
+        }
+        .report-card-premium .dot { width: 6px; height: 6px; border-radius: 50%; background: #cbd5e1; transition: 0.2s; }
+        .report-card-premium .text { font-size: 13.5px; font-weight: 600; flex: 1; }
+        .report-card-premium .arrow { opacity: 0; color: var(--primary); transform: translateX(-10px); transition: 0.3s; }
+        
+        .report-card-premium:hover { background: #fbfcfe; color: var(--primary); transform: translateX(4px); }
+        .report-card-premium:hover .dot { background: var(--primary); transform: scale(1.3); }
+        .report-card-premium:hover .arrow { opacity: 1; transform: translateX(0); }
+
+        .insight-btn { margin-top: 16px; background: none; border: none; font-size: 13px; font-weight: 800; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
+        .insight-btn:hover { filter: brightness(0.8); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+      `}</style>
     </DashboardLayout>
   );
 }

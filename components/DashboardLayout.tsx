@@ -25,6 +25,7 @@ import {
   FileText,
   MonitorPlay,
   DollarSign,
+  TrendingUp,
   TrendingDown,
   UserCheck
 } from 'lucide-react';
@@ -36,115 +37,54 @@ interface NavItem {
   name: string;
   icon: React.ReactNode;
   href?: string;
-  subItems?: { name: string; href: string }[];
+  permissionId?: string;
+  subItems?: { name: string; href: string; permissionId?: string }[];
 }
 
 const navigation: Record<string, NavItem[]> = {
   'Institucional': [
-    { name: 'Estudiantes', icon: <Users size={18} />, subItems: [
-      { name: 'Registrar Estudiante', href: '/dashboard/students/register' },
-      { name: 'Información básica', href: '/dashboard/students/basic-info' },
-      { name: 'Preinscripciones', href: '/dashboard/students/pre-enrollment' },
-      { name: 'Inscritos no matriculados', href: '/dashboard/students/not-enrolled' },
-      { name: 'Cancelación masiva', href: '/dashboard/students/mass-cancellation' },
-      { name: 'Establecer egresados', href: '/dashboard/students/graduates' }
+    { name: 'Estudiantes', icon: <Users size={18} />, permissionId: 'inst_estu_acad', subItems: [
+      { name: 'Registrar Estudiante', href: '/dashboard/institutional/people/students/register', permissionId: 'inst_estu_reg' },
+      { name: 'Información básica', href: '/dashboard/institutional/people/students/basic-info', permissionId: 'inst_estu_info' },
+      { name: 'Preinscripciones', href: '/dashboard/institutional/people/students/pre-enrollment', permissionId: 'inst_estu_prei' },
+      { name: 'Inscritos no matriculados', href: '/dashboard/institutional/people/students/insc' },
+      { name: 'Cancelación masiva', href: '/dashboard/institutional/people/students/mass-cancellation' },
+      { name: 'Establecer egresados', href: '/dashboard/institutional/people/students/graduates', permissionId: 'inst_estu_egre' }
     ]},
-    { name: 'Docentes', icon: <User size={18} />, subItems: [
-      { name: 'Registrar Docente', href: '/dashboard/teachers/register' },
-      { name: 'Información básica', href: '/dashboard/teachers/basic-info' }
+    { name: 'Docentes', icon: <User size={18} />, permissionId: 'inst_doce_gest', subItems: [
+      { name: 'Registrar Docente', href: '/dashboard/institutional/people/teachers/register' },
+      { name: 'Información básica', href: '/dashboard/institutional/people/teachers/basic-info' }
     ]},
-    { name: 'Administrativos', icon: <ShieldCheck size={18} />, subItems: [
-      { name: 'Registrar Administrativo', href: '/dashboard/admins/register' },
-      { name: 'Información básica', href: '/dashboard/admins/basic-info' }
+    { name: 'Administrativos', icon: <ShieldCheck size={18} />, permissionId: 'inst_admin_gest', subItems: [
+      { name: 'Registrar Administrativo', href: '/dashboard/institutional/people/admins/register' },
+      { name: 'Información básica', href: '/dashboard/institutional/people/admins/basic-info' }
     ]},
-    { name: 'Familiares', icon: <Users size={18} />, subItems: [
-      { name: 'Registrar familiar', href: '/dashboard/family/register' },
-      { name: 'Información básica', href: '/dashboard/family/basic-info' }
+    { name: 'Familiares', icon: <Users size={18} />, permissionId: 'inst_acud_gest', subItems: [
+      { name: 'Registrar familiar', href: '/dashboard/institutional/people/family/register' },
+      { name: 'Información básica', href: '/dashboard/institutional/people/family/basic-info' }
     ]},
-    { name: 'Participantes', icon: <Users size={18} />, subItems: [
-      { name: 'Información básica', href: '/dashboard/participants/basic-info' }
+    { name: 'Admisiones / CRM', icon: <Target size={18} />, permissionId: 'inst_crm_opor', href: '/dashboard/institutional/admissions' },
+    { name: 'Gestión de Carnetización', icon: <CreditCard size={18} />, permissionId: 'inst_carn_admin', subItems: [
+      { name: 'Generar Carnets', href: '/dashboard/institutional/id-cards/requests' }
     ]},
-    { name: 'Comercial CRM', icon: <Target size={18} />, subItems: [
-      { name: 'Oportunidades', href: '/dashboard/commercial/opportunities' },
-      { name: 'Medios publicitarios', href: '/dashboard/commercial/advertising-media' },
-      { name: 'Medios de contactos', href: '/dashboard/commercial/contact-media' },
-      { name: 'Estados de negocio', href: '/dashboard/commercial/business-status' },
-      { name: 'Campos personalizados', href: '/dashboard/commercial/custom-fields' },
-      { name: 'Causas', href: '/dashboard/commercial/causes' },
-      { name: 'Importar oportunidades', href: '/dashboard/commercial/import-opportunities' },
-      { name: 'Cambio masivo de asesor', href: '/dashboard/commercial/mass-advisor-change' }
-    ]},
-    { name: 'Establecimiento', icon: <Building size={18} />, subItems: [
-      { name: 'Información general', href: '/dashboard/establishment/general-info' }
-    ]},
-    { name: 'Admisiones', icon: <BookOpen size={18} />, subItems: [
-      { name: 'Panel de admisiones', href: '/dashboard/admissions/panel' }
-    ]},
-    { name: 'Centro de Recepción', icon: <ShieldCheck size={18} />, subItems: [
-      { name: 'Recepción y Novedades', href: '/dashboard/reception' }
-    ]},
-    { name: 'Gestión de Carnetización', icon: <CreditCard size={18} />, subItems: [
-      { name: 'Generar Carnets', href: '/dashboard/id-cards/requests' }
-    ]},
-    { name: 'Estructuración', icon: <Database size={18} />, subItems: [
-      { name: 'Sedes - jornadas', href: '/dashboard/structuring/branches' },
-      { name: 'Niveles', href: '/dashboard/structuring/levels' },
-      { name: 'Aulas', href: '/dashboard/structuring/classrooms' },
-      { name: 'Periodos', href: '/dashboard/structuring/periods' },
-      { name: 'Perfiles', href: '/dashboard/structuring/profiles' },
-      { name: 'Empresas', href: '/dashboard/structuring/companies' },
-      { name: 'Instituciones educativas', href: '/dashboard/structuring/educational-institutions' },
-      { name: 'Preguntas personalizadas', href: '/dashboard/structuring/custom-questions' },
-      { name: 'Categorías documentos digitales', href: '/dashboard/structuring/digital-categories' },
-      { name: 'Entidades administradoras', href: '/dashboard/structuring/admin-entities' },
-      { name: 'Parametrización de informes', href: '/dashboard/structuring/reports-configuration' }
-    ]}
+    { name: 'Configuración Global', icon: <Database size={18} />, permissionId: 'inst_estru_perf', href: '/dashboard/settings' }
   ],
   'Académico': [
-    { name: 'Evaluaciones', icon: <FileText size={18} />, href: '/dashboard/academic/evaluations' },
-    { name: 'Observador', icon: <UserCheck size={18} />, href: '/dashboard/academic/observer' },
-    { name: 'Educación virtual', icon: <MonitorPlay size={18} />, subItems: [
-      { name: 'Aulas virtuales', href: '/dashboard/academic/virtual-classrooms' }
-    ]},
-    { name: 'Estructuración', icon: <Database size={18} />, subItems: [
-      { name: 'Asignaturas', href: '/dashboard/academic/structuring/subjects' },
-      { name: 'Programas', href: '/dashboard/academic/structuring/programs' },
-      { name: 'Sedes - jornadas - programas', href: '/dashboard/academic/structuring/sede-jornada' },
-      { name: 'Cursos', href: '/dashboard/academic/structuring/cursos' },
-      { name: 'Cerrar - cursos', href: '/dashboard/academic/structuring/close-courses' },
-      { name: 'Preguntas personalizadas programas', href: '/dashboard/academic/structuring/custom-questions-programs' },
-      { name: 'Grupos', href: '/dashboard/academic/structuring/grupos' },
-      { name: 'Agrupaciones', href: '/dashboard/academic/structuring/groupings' },
-      { name: 'Parámetros de evaluación asignaturas', href: '/dashboard/academic/structuring/eval-params' },
-      { name: 'Parámetros evaluaciones', href: '/dashboard/academic/structuring/eval-parameters' },
-      { name: 'Tipos de cancelaciones', href: '/dashboard/academic/structuring/cancellation-types' },
-      { name: 'Causas de cancelación', href: '/dashboard/academic/structuring/cancellation-causes' },
-      { name: 'Restricciones de evaluación', href: '/dashboard/academic/structuring/eval-restrictions' },
-      { name: 'Requisitos de matrícula', href: '/dashboard/academic/structuring/enrollment-requirements' },
-      { name: 'Requisitos de grado', href: '/dashboard/academic/structuring/graduation-requirements' },
-      { name: 'Parametrización de constancias y certificados', href: '/dashboard/academic/structuring/certificates-parameters' },
-      { name: 'Categorías examen admisión', href: '/dashboard/academic/structuring/admission-categories' }
-    ]}
+    { name: 'Evaluaciones', icon: <FileText size={18} />, permissionId: 'acad_gest_eval', href: '/dashboard/academic/evaluations' },
+    { name: 'Observador', icon: <UserCheck size={18} />, permissionId: 'inst_estu_obse', href: '/dashboard/academic/observer' },
+    { name: 'Educación virtual', icon: <MonitorPlay size={18} />, permissionId: 'acad_estru_curs', href: '/dashboard/academic/virtual-classrooms' }
   ],
   'Tesorería': [
-    { name: 'Otros ingresos', icon: <DollarSign size={18} />, href: '/dashboard/treasury/other-incomes' },
-    { name: 'Egresos', icon: <TrendingDown size={18} />, href: '/dashboard/treasury/expenses' },
-    { name: 'Codeudores', icon: <Users size={18} />, subItems: [
+    { name: 'Ecosistema Financiero', icon: <TrendingUp size={18} />, href: '/dashboard/treasury/financial-ecosystem' },
+    { name: 'Otros ingresos', icon: <DollarSign size={18} />, permissionId: 'teso_gest_ingr', href: '/dashboard/treasury/other-incomes' },
+    { name: 'Egresos', icon: <TrendingDown size={18} />, permissionId: 'teso_gest_egre', href: '/dashboard/treasury/expenses' },
+    { name: 'Codeudores', icon: <Users size={18} />, permissionId: 'teso_gest_cart_p', subItems: [
       { name: 'Registrar codeudor', href: '/dashboard/treasury/codebtors/register' },
       { name: 'Información básica', href: '/dashboard/treasury/codebtors/basic-info' }
-    ]},
-    { name: 'Administrar notas crédito', icon: <FileText size={18} />, href: '/dashboard/treasury/credit-notes' },
-    { name: 'Estructuración', icon: <Database size={18} />, subItems: [
-      { name: 'Impuestos', href: '/dashboard/treasury/taxes' },
-      { name: 'Productos', href: '/dashboard/treasury/products' },
-      { name: 'Descuentos', href: '/dashboard/treasury/structuring/discounts' },
-      { name: 'Cuentas', href: '/dashboard/treasury/structuring/accounts' },
-      { name: 'Terceros', href: '/dashboard/treasury/structuring/third-parties' },
-      { name: 'Formas de pago', href: '/dashboard/treasury/structuring/payment-methods' }
     ]}
   ],
   'Informes': [
-    { name: 'Panel de informes', icon: <BarChart3 size={18} />, href: '/dashboard/reports' }
+    { name: 'Panel de informes', icon: <BarChart3 size={18} />, permissionId: 'info_gest_resu', href: '/dashboard/reports' }
   ]
 };
 
@@ -153,7 +93,11 @@ const MOCK_NOTIFICATIONS = [
   { id: 2, title: 'Pago Recibido', detail: 'Se ha confirmado el pago de pensión de Marzo.', time: 'Hace 1 hora', type: '#10b981' },
 ];
 
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import NexusBot from './NexusBot';
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { hasPermission, isLoading: permsLoading } = usePermissions();
   const pathname = usePathname();
   const router = useRouter();
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
@@ -171,6 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const logoInputRef = useRef<HTMLInputElement>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   React.useEffect(() => {
     const root = document.documentElement;
@@ -184,15 +129,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   React.useEffect(() => {
     const savedUser = localStorage.getItem('edunexus_user');
-    if (savedUser) {
-      try {
-        const u = JSON.parse(savedUser);
-        setUserProfile({
-          name: u.name,
-          role: u.role,
-          roleLabel: u.role === 'RECEPTIONIST' ? 'RECEPCIÓN Y ACCESO' : 'RECTORÍA MASTER'
-        });
-      } catch(e) {}
+    
+    // Auth Guard: Redirect if no user object exists
+    if (!savedUser) {
+      router.push('/');
+      return;
+    }
+
+    try {
+      const u = JSON.parse(savedUser);
+      setUserProfile({
+        name: u.name,
+        role: u.role,
+        roleLabel: u.role === 'RECEPTIONIST' ? 'RECEPCIÓN Y ACCESO' : (u.role === 'SUPER_ADMIN' ? 'SUPER ADMIN MASTER' : 'RECTORÍA MASTER')
+      });
+    } catch(e) {
+      router.push('/');
+      return;
     }
 
     const loadConfig = async () => {
@@ -215,59 +168,76 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleSearch = (val: string) => {
     setSearchTerm(val);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
     if (val.length < 2) {
       setSearchResults([]);
       return;
     }
-    
-    const query = val.toLowerCase();
-    
-    // Helper to get from local storage safely
-    const getLocal = (key: string) => {
-      if (typeof window === 'undefined') return [];
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : [];
-    };
 
-    const students = getLocal('edunexus_registered_students').filter((s: any) => 
-      s.name.toLowerCase().includes(query) || s.id.includes(query)
-    ).map((s: any) => ({ 
-      id: s.id, name: s.name, type: 'Estudiante', icon: <Users size={14} />, href: `/dashboard/students/basic-info` 
-    }));
-
-    const admins = getLocal('edunexus_registered_admins').filter((a: any) => 
-      a.name.toLowerCase().includes(query) || a.id.includes(query)
-    ).map((a: any) => ({ 
-      id: a.id, name: a.name, type: 'Administrativo', icon: <ShieldCheck size={14} />, href: `/dashboard/admins/basic-info` 
-    }));
-
-    const teachers = getLocal('edunexus_registered_teachers').filter((t: any) => 
-      t.name.toLowerCase().includes(query) || t.id.includes(query)
-    ).map((t: any) => ({ 
-      id: t.id, name: t.name, type: 'Docente', icon: <GraduationCap size={14} />, href: `/dashboard/teachers/basic-info` 
-    }));
-
-    const families = getLocal('edunexus_registered_family').filter((f: any) => 
-      f.name.toLowerCase().includes(query) || f.id.includes(query)
-    ).map((f: any) => ({ 
-      id: f.id, name: f.name, type: 'Familiar', icon: <Users size={14} />, href: `/dashboard/family/basic-info` 
-    }));
-
-    const processes: any[] = [];
-    Object.entries(navigation).forEach(([category, items]) => {
-      items.forEach(item => {
-        if (item.href && item.name.toLowerCase().includes(query)) {
-          processes.push({ name: item.name, type: `Proceso • ${category}`, icon: <BookOpen size={14} />, href: item.href });
-        }
-        item.subItems?.forEach(sub => {
-          if (sub.href.toLowerCase().includes(query) || sub.name.toLowerCase().includes(query)) {
-            processes.push({ name: sub.name, type: `Proceso • ${category} / ${item.name}`, icon: <BookOpen size={14} />, href: sub.href });
+    searchTimeoutRef.current = setTimeout(async () => {
+      const query = val.toLowerCase();
+      
+      // 1. Search for menu items (Processes)
+      const processes: any[] = [];
+      Object.entries(navigation).forEach(([category, items]) => {
+        items.forEach(item => {
+          if (item.name.toLowerCase().includes(query)) {
+            processes.push({ name: item.name, type: `Proceso • ${category}`, icon: <BookOpen size={14} />, href: item.href });
           }
+          item.subItems?.forEach(sub => {
+            if (sub.name.toLowerCase().includes(query)) {
+              processes.push({ name: sub.name, type: `Proceso • ${category} / ${item.name}`, icon: <BookOpen size={14} />, href: sub.href });
+            }
+          });
         });
       });
-    });
 
-    setSearchResults([...students, ...admins, ...teachers, ...families, ...processes]);
+      try {
+        // 2. Search for people in Firestore
+        const [students, teachers, admins, families] = await Promise.all([
+          db.list<any>('students'),
+          db.list<any>('teachers'),
+          db.list<any>('admins'),
+          db.list<any>('family')
+        ]);
+
+        const studentResults = students.filter(s => 
+          (s.name?.toLowerCase() || '').includes(query) || 
+          (s.surname?.toLowerCase() || '').includes(query) ||
+          (s.documentId || '').includes(query)
+        ).map(s => ({ 
+          id: s.id, name: `${s.name} ${s.surname}`, type: 'Estudiante', icon: <Users size={14} />, href: `/dashboard/institutional/people/students/basic-info/${s.id}` 
+        }));
+
+        const teacherResults = teachers.filter(t => 
+          (t.name?.toLowerCase() || '').includes(query) || 
+          (t.surname?.toLowerCase() || '').includes(query) ||
+          (t.documentId || '').includes(query)
+        ).map(t => ({ 
+          id: t.id, name: `${t.name} ${t.surname}`, type: 'Docente', icon: <GraduationCap size={14} />, href: `/dashboard/institutional/people/teachers/profile/${t.id}` 
+        }));
+
+        const adminResults = admins.filter(a => 
+          (a.name?.toLowerCase() || '').includes(query) || 
+          (a.fullName?.toLowerCase() || '').includes(query)
+        ).map(a => ({ 
+          id: a.id, name: a.fullName || a.name, type: 'Administrativo', icon: <ShieldCheck size={14} />, href: `/dashboard/institutional/people/admins/basic-info/${a.id}` 
+        }));
+
+        const familyResults = families.filter(f => 
+          (f.name?.toLowerCase() || '').includes(query) || 
+          (f.surname?.toLowerCase() || '').includes(query)
+        ).map(f => ({ 
+          id: f.id, name: `${f.name} ${f.surname || ''}`, type: 'Familiar', icon: <Users size={14} />, href: `/dashboard/institutional/people/family/basic-info/${f.id}` 
+        }));
+
+        setSearchResults([...processes, ...studentResults, ...teacherResults, ...adminResults, ...familyResults]);
+      } catch (err) {
+        console.error("Global search error:", err);
+        setSearchResults([...processes]);
+      }
+    }, 300);
   };
 
   const handleMouseEnter = (category: string) => {
@@ -387,13 +357,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <nav style={{ display: 'flex', gap: '8px', flex: 2, justifyContent: 'center' }}>
           {Object.entries(navigation).reduce((acc, [category, items]) => {
-            if (userProfile.role === 'RECEPTIONIST') {
-              if (category === 'Institucional') {
-                const allowedItems = items.filter(item => item.name === 'Centro de Recepción');
-                if (allowedItems.length > 0) acc.push([category, allowedItems] as [string, NavItem[]]);
-              }
-            } else {
-              acc.push([category, items] as [string, NavItem[]]);
+            // Filtrado por permisos
+            const filteredItems = items.filter(item => {
+               if (userProfile.role === 'ADMIN') return true;
+               if (item.permissionId && !hasPermission(item.permissionId)) return false;
+               return true;
+            });
+
+            if (filteredItems.length > 0) {
+              acc.push([category, filteredItems] as [string, NavItem[]]);
             }
             return acc;
           }, [] as [string, NavItem[]][]).map(([category, items]) => {
@@ -440,7 +412,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             top: isLargeMenu ? '0' : '-10px', 
                             bottom: 'auto',
                             left: '100%', 
-                            paddingLeft: '8px', /* Invisible hover bridge to prevent disappearing menus */
+                            paddingLeft: '8px', 
                             zIndex: 10000
                           }}>
                             <div style={{
@@ -453,7 +425,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                               border: '1px solid var(--glass-border)', 
                               padding: '12px',
                             }} className="custom-scrollbar">
-                              {item.subItems.map((sub) => (
+                              {item.subItems.filter(sub => {
+                                 if (userProfile.role === 'ADMIN') return true;
+                                 if (sub.permissionId && !hasPermission(sub.permissionId)) return false;
+                                 return true;
+                              }).map((sub) => (
                                 <Link key={sub.name} href={sub.href} style={{ padding: '10px 14px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: pathname === sub.href ? 'var(--primary)' : 'var(--text-dim)', textDecoration: 'none', display: 'block', background: pathname === sub.href ? 'var(--primary-glow)' : 'transparent' }}>
                                   {sub.name}
                                 </Link>
@@ -516,7 +492,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <div onClick={() => { setShowChangePasswordModal(true); setShowUserMenu(false); }} style={{ padding: '10px 12px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: 'var(--text-dim)', cursor: 'pointer' }}>Cambiar contraseña</div>
                  </div>
                  <div style={{ padding: '4px 0' }}>
-                    <div onClick={() => { router.push('/'); setShowUserMenu(false); }} style={{ padding: '10px 12px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#ef4444', cursor: 'pointer' }}>Cerrar sesión</div>
+                    <div onClick={() => { 
+                      localStorage.removeItem('edunexus_user'); 
+                      sessionStorage.removeItem('edunexus_tenant_config');
+                      router.push('/'); 
+                      setShowUserMenu(false); 
+                    }} style={{ padding: '10px 12px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', color: '#ef4444', cursor: 'pointer' }}>Cerrar sesión</div>
                  </div>
                </div>
              )}
@@ -614,6 +595,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           background: rgba(0,0,0,0.1);
         }
       `}</style>
+      
+      {/* Floating NexusBot Phase 2 */}
+      <NexusBot />
     </div>
   );
 }

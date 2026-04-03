@@ -1,0 +1,32 @@
+[
+  {
+    "id": "teach-01",
+    "nombre": "Ricardo",
+    "telefono": "3104567890",
+    "email": "rarjona@nuevaesperanza.edu",
+    "name": "Ricardo Arjona",
+    "status": "active",
+    "apellido": "Arjona",
+    "estado": "active",
+    "createdAt": 1774645569965
+  },
+  {
+    "id": "teach-02",
+    "telefono": "3115678901",
+    "nombre": "Beatriz",
+    "status": "active",
+    "name": "Beatriz Pinzón",
+    "email": "bpinzon@nuevaesperanza.edu",
+    "createdAt": 1774645569965,
+    "estado": "active",
+    "apellido": "Pinzón"
+  },
+  {
+    "id": "2001",
+    "_collection": "teachers",
+    "createdAt": 1774621541881,
+    "status": "Activo",
+    "name": "PROFESORA ANA MARÍA",
+    "email": "anamaria@edunexus.com"
+  }
+]

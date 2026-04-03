@@ -1,0 +1,13 @@
+{
+  "grupo": "A",
+  "nivel": "10",
+  "descripcion": "DÉCIMO GRADO A",
+  "estado": "Activo",
+  "programaId": "prog-bach-001",
+  "id": "curso-10a-2026",
+  "createdAt": 1774645569965,
+  "sedeId": "sede-principal-hq",
+  "nombre": "10A",
+  "jornadaId": "jor-manana-001",
+  "capacidad": 35
+}

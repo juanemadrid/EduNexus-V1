@@ -1,0 +1,128 @@
+{
+  "nuevaesperanza_teachers": {
+    "count": 2,
+    "docs": [
+      {
+        "id": "teach-01",
+        "name": "Ricardo Arjona",
+        "email": "rarjona@nuevaesperanza.edu",
+        "cedula": null,
+        "keys": [
+          "estado",
+          "createdAt",
+          "telefono",
+          "email",
+          "id",
+          "name",
+          "nombre",
+          "status",
+          "apellido"
+        ]
+      },
+      {
+        "id": "teach-02",
+        "name": "Beatriz Pinzón",
+        "email": "bpinzon@nuevaesperanza.edu",
+        "cedula": null,
+        "keys": [
+          "estado",
+          "nombre",
+          "name",
+          "id",
+          "email",
+          "createdAt",
+          "telefono",
+          "status",
+          "apellido"
+        ]
+      }
+    ]
+  },
+  "teachers": {
+    "count": 1,
+    "docs": [
+      {
+        "id": "2001",
+        "name": "PROFESORA ANA MARÍA",
+        "email": "anamaria@edunexus.com",
+        "cedula": null,
+        "keys": [
+          "id",
+          "name",
+          "email",
+          "createdAt",
+          "status"
+        ]
+      }
+    ]
+  },
+  "docentes": {
+    "count": 0,
+    "docs": []
+  },
+  "nuevaesperanza_docentes": {
+    "count": 0,
+    "docs": []
+  },
+  "users": {
+    "count": 2,
+    "docs": [
+      {
+        "id": "1@gmail.com",
+        "name": "Admin - mkf",
+        "email": "1@gmail.com",
+        "cedula": null,
+        "keys": [
+          "status",
+          "createdAt",
+          "role",
+          "email",
+          "id",
+          "password",
+          "tenantId",
+          "name"
+        ]
+      },
+      {
+        "id": "nuevaesperanza@gmail.com",
+        "name": "Admin - nueva esperanza ",
+        "email": "nuevaesperanza@gmail.com",
+        "cedula": null,
+        "keys": [
+          "status",
+          "name",
+          "id",
+          "password",
+          "tenantId",
+          "role",
+          "createdAt",
+          "email"
+        ]
+      }
+    ]
+  },
+  "nuevaesperanza_users": {
+    "count": 0,
+    "docs": []
+  },
+  "institution_teachers": {
+    "count": 0,
+    "docs": []
+  },
+  "staff": {
+    "count": 0,
+    "docs": []
+  },
+  "personnel": {
+    "count": 0,
+    "docs": []
+  },
+  "nuevaesperanza_staff": {
+    "count": 0,
+    "docs": []
+  },
+  "nueva_esperanza_teachers": {
+    "count": 0,
+    "docs": []
+  }
+}

@@ -2,13 +2,9 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Search, Plus, Filter, Edit, Trash2, X, Check } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/db';
 
-const INITIAL_REQUIREMENTS = [
-  { id: '1', nombre: 'DOCUMENTO DE IDENTIDAD AMPLIADO AL 150%', descripcion: 'Fotocopia legible por ambos lados', obligatorio: true, estado: 'Activo' },
-  { id: '2', nombre: 'ACTA DE GRADO DE BACHILLER', descripcion: 'Original o copia autenticada', obligatorio: true, estado: 'Activo' },
-  { id: '3', nombre: 'CERTIFICADO DE EPS O SISBEN', descripcion: 'Vigencia no mayor a 30 días', obligatorio: false, estado: 'Activo' },
-  { id: '4', nombre: 'FOTOS 3X4 FONDO BLANCO', descripcion: '2 fotos recientes', obligatorio: true, estado: 'Activo' }
-];
+/* Removed INITIAL_REQUIREMENTS to keep code clean as per user request */
 
 export default function EnrollmentRequirementsPage() {
   const [requirements, setRequirements] = useState<any[]>([]);
@@ -22,50 +18,62 @@ export default function EnrollmentRequirementsPage() {
     nombre: '',
     descripcion: '',
     obligatorio: true,
+    requiereAdjunto: true,
+    categoriaArchivoId: '',
     estado: 'Activo' as 'Activo' | 'Inactivo'
   });
 
+  const [digitalCategories, setDigitalCategories] = useState<any[]>([]);
+
+  const fetchRequirements = async () => {
+    const data = await db.list('enrollment_requirements');
+    setRequirements(data);
+  };
+
+  const fetchDigitalCategories = async () => {
+    const data = await db.list('digital_categories');
+    setDigitalCategories(data);
+  };
+
   useEffect(() => {
-    const saved = localStorage.getItem('edunexus_enrollment_requirements');
-    if (saved) {
-      setRequirements(JSON.parse(saved));
-    } else {
-      localStorage.setItem('edunexus_enrollment_requirements', JSON.stringify(INITIAL_REQUIREMENTS));
-      setRequirements(INITIAL_REQUIREMENTS);
-    }
+    fetchRequirements();
+    fetchDigitalCategories();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nombre) {
       alert('El nombre es obligatorio');
       return;
     }
 
-    let updated;
     if (isEditing && editingId) {
-      updated = requirements.map(r => r.id === editingId ? { ...r, ...form } : r);
+      await db.update('enrollment_requirements', editingId, form);
     } else {
-      const newReq = {
-        id: Date.now().toString(),
-        ...form
-      };
-      updated = [newReq, ...requirements];
+      await db.create('enrollment_requirements', form);
     }
 
-    setRequirements(updated);
-    localStorage.setItem('edunexus_enrollment_requirements', JSON.stringify(updated));
+    await fetchRequirements();
     setShowModal(false);
     setIsEditing(false);
     setEditingId(null);
-    setForm({ nombre: '', descripcion: '', obligatorio: true, estado: 'Activo' });
+    setForm({ 
+      nombre: '', 
+      descripcion: '', 
+      obligatorio: true, 
+      requiereAdjunto: true, 
+      categoriaArchivoId: '', 
+      estado: 'Activo' 
+    });
   };
 
   const handleEdit = (req: any) => {
     setForm({
       nombre: req.nombre,
       descripcion: req.descripcion,
-      obligatorio: req.obligatorio,
-      estado: req.estado
+      obligatorio: req.obligatorio ?? true,
+      requiereAdjunto: req.requiereAdjunto ?? true,
+      categoriaArchivoId: req.categoriaArchivoId || '',
+      estado: req.estado || 'Activo'
     });
     setEditingId(req.id);
     setIsEditing(true);
@@ -77,11 +85,10 @@ export default function EnrollmentRequirementsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (editingId) {
-      const updated = requirements.filter(r => r.id !== editingId);
-      setRequirements(updated);
-      localStorage.setItem('edunexus_enrollment_requirements', JSON.stringify(updated));
+      await db.delete('enrollment_requirements', editingId);
+      await fetchRequirements();
       setShowDeleteModal(false);
       setEditingId(null);
     }
@@ -120,7 +127,7 @@ export default function EnrollmentRequirementsPage() {
           style={{ background: '#10b981', color: 'white', padding: '10px 20px', fontSize: '13px', fontWeight: '700' }}
           onClick={() => {
             setIsEditing(false);
-            setForm({ nombre: '', descripcion: '', obligatorio: true, estado: 'Activo' });
+            setForm({ nombre: '', descripcion: '', obligatorio: true, requiereAdjunto: true, categoriaArchivoId: '', estado: 'Activo' });
             setShowModal(true);
           }}
         >
@@ -134,8 +141,8 @@ export default function EnrollmentRequirementsPage() {
           <thead>
             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
               <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Requisito</th>
-              <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Descripción</th>
-              <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Obligatorio</th>
+              <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Adjunto</th>
+              <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Categoría archivo</th>
               <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Estado</th>
               <th style={{ textAlign: 'center', padding: '16px 24px', fontSize: '12px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>Acciones</th>
             </tr>
@@ -144,14 +151,19 @@ export default function EnrollmentRequirementsPage() {
             {filtered.length > 0 ? (
               filtered.map((req) => (
                 <tr key={req.id} style={{ borderBottom: '1px solid #f8fafc', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'} onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                  <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{req.nombre}</td>
-                  <td style={{ padding: '16px 24px', fontSize: '13px', color: '#64748b' }}>{req.descripcion || '-'}</td>
+                  <td style={{ padding: '16px 24px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#1e293b' }}>{req.nombre}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{req.descripcion || 'Sin descripción'}</div>
+                  </td>
                   <td style={{ padding: '16px 24px', textAlign: 'center' }}>
-                    {req.obligatorio ? (
-                      <span style={{ padding: '4px 10px', borderRadius: '20px', background: '#fef2f2', color: '#ef4444', fontSize: '11px', fontWeight: '700' }}>SÍ</span>
+                    {req.requiereAdjunto ? (
+                      <span style={{ padding: '4px 10px', borderRadius: '20px', background: '#ecfdf5', color: '#10b981', fontSize: '11px', fontWeight: '700' }}>SÍ</span>
                     ) : (
                       <span style={{ padding: '4px 10px', borderRadius: '20px', background: '#f1f5f9', color: '#64748b', fontSize: '11px', fontWeight: '700' }}>NO</span>
                     )}
+                  </td>
+                  <td style={{ padding: '16px 24px', fontSize: '13px', color: '#4b5563', fontWeight: '500' }}>
+                    {digitalCategories.find(c => c.id === req.categoriaArchivoId)?.name || '-'}
                   </td>
                   <td style={{ padding: '16px 24px', textAlign: 'center' }}>
                     <span style={{ padding: '4px 10px', borderRadius: '20px', background: req.estado === 'Activo' ? '#ecfdf5' : '#f1f5f9', color: req.estado === 'Activo' ? '#10b981' : '#64748b', fontSize: '11px', fontWeight: '700' }}>
@@ -185,51 +197,79 @@ export default function EnrollmentRequirementsPage() {
               <h2 style={{ margin: 0, color: 'white', fontSize: '18px', fontWeight: '800' }}>{isEditing ? 'Editar requisito' : 'Nuevo requisito'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.8 }}><X size={20} /></button>
             </div>
-            <div style={{ padding: '32px' }}>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Nombre del requisito *</label>
-                <input 
-                  type="text" 
-                  className="input-premium" 
-                  style={{ width: '100%', height: '42px' }} 
-                  value={form.nombre} 
-                  onChange={e => setForm({...form, nombre: e.target.value.toUpperCase()})}
-                />
+            <div style={{ padding: '24px 32px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Nombre *</label>
+                  <input 
+                    type="text" 
+                    className="input-premium" 
+                    style={{ width: '100%', height: '42px' }} 
+                    value={form.nombre} 
+                    onChange={e => setForm({...form, nombre: e.target.value.toUpperCase()})}
+                  />
+                </div>
+                <div style={{ gridColumn: 'span 1' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Estado</label>
+                  <div style={{ display: 'flex', gap: '16px', height: '42px', alignItems: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input type="radio" name="estado" checked={form.estado === 'Activo'} onChange={() => setForm({...form, estado: 'Activo'})} /> Activo
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input type="radio" name="estado" checked={form.estado === 'Inactivo'} onChange={() => setForm({...form, estado: 'Inactivo'})} /> Inactivo
+                    </label>
+                  </div>
+                </div>
               </div>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Descripción</label>
-                <textarea 
-                  className="input-premium" 
-                  style={{ width: '100%', height: '80px', padding: '12px', resize: 'none' }} 
-                  value={form.descripcion} 
-                  onChange={e => setForm({...form, descripcion: e.target.value})}
-                />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Obligatorio</label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
-                    <input 
-                      type="checkbox" 
-                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }} 
-                      checked={form.obligatorio} 
-                      onChange={e => setForm({...form, obligatorio: e.target.checked})}
-                    />
-                    Requerido para matrícula
-                  </label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Requiere adjunto</label>
+                  <div style={{ display: 'flex', gap: '16px', height: '42px', alignItems: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input type="radio" name="adjunto" checked={form.requiereAdjunto === true} onChange={() => setForm({...form, requiereAdjunto: true})} /> Sí
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                      <input type="radio" name="adjunto" checked={form.requiereAdjunto === false} onChange={() => setForm({...form, requiereAdjunto: false})} /> No
+                    </label>
+                  </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Estado</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Categoría archivo *</label>
                   <select 
                     className="input-premium" 
                     style={{ width: '100%', height: '42px' }}
-                    value={form.estado}
-                    onChange={e => setForm({...form, estado: e.target.value as 'Activo' | 'Inactivo'})}
+                    value={form.categoriaArchivoId}
+                    onChange={e => setForm({...form, categoriaArchivoId: e.target.value})}
                   >
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
+                    <option value="">Seleccione</option>
+                    {digitalCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#64748b', marginBottom: '8px', textTransform: 'uppercase' }}>Descripción interna</label>
+                <textarea 
+                  className="input-premium" 
+                  style={{ width: '100%', height: '60px', padding: '12px', resize: 'none' }} 
+                  value={form.descripcion} 
+                  onChange={e => setForm({...form, descripcion: e.target.value})}
+                  placeholder="Detalles adicionales para el administrativo..."
+                />
+              </div>
+              <div style={{ marginTop: '20px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '800', color: '#64748b', textTransform: 'uppercase' }}>
+                  <input 
+                    type="checkbox" 
+                    style={{ width: '18px', height: '18px', accentColor: '#10b981' }} 
+                    checked={form.obligatorio} 
+                    onChange={e => setForm({...form, obligatorio: e.target.checked})}
+                  />
+                  ¿Es obligatorio para el proceso de matrícula?
+                </label>
               </div>
             </div>
             <div style={{ padding: '20px 32px', borderTop: '1px solid #f1f5f9', background: '#f9fafb', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>

@@ -1,9 +1,12 @@
-// Centralized institutional parameters to maintain consistency across the app
+// Centralized institutional parameters
+// IMPORTANT: Most of these are legacy hardcoded arrays. 
+// For production, always prefer fetching dynamic data via `db.list('sedes')`, `db.list('academic_periods')`, etc.
 
 export interface Sede {
   id: string;
   nombre: string;
   direccion?: string;
+  jornadas?: any[];
 }
 
 export interface Jornada {
@@ -14,27 +17,20 @@ export interface Jornada {
 export interface Periodo {
   id: string;
   nombre: string;
+  name?: string; // Transitional
   activo: boolean;
 }
 
-export const SEDES: Sede[] = [
+// Default fallback values (use only if DB is empty)
+export const DEFAULT_SEDES: Sede[] = [
   { id: '1', nombre: 'Sede Principal - Centro', direccion: 'Calle 10 # 5-20' },
-  { id: '2', nombre: 'Sede Norte - Campestre', direccion: 'Km 5 Vía al Mar' },
-  { id: '3', nombre: 'Sede Virtual', direccion: 'Online' },
 ];
 
-export const JORNADAS: Jornada[] = [
+export const DEFAULT_JORNADAS: Jornada[] = [
   { id: 'mat', nombre: 'Mañana' },
   { id: 'tar', nombre: 'Tarde' },
   { id: 'noc', nombre: 'Noche' },
-  { id: 'fin', nombre: 'Fin de Semana' },
   { id: 'uni', nombre: 'Única' },
-];
-
-export const PERIODOS: Periodo[] = [
-  { id: '2025-1', nombre: 'Primer Semestre 2025', activo: false },
-  { id: '2025-2', nombre: 'Segundo Semestre 2025', activo: true },
-  { id: '2026-1', nombre: 'Primer Semestre 2026', activo: false },
 ];
 
 export const TIPOS_IDENTIFICACION = [
@@ -55,7 +51,13 @@ export const GENEROS = [
   'Prefiero no decirlo'
 ];
 
-// Combined Sede-Jornada options (as Q10 does it in a single dropdown)
+// Re-exports for backward compatibility (transitioning to dynamic)
+export const SEDES = DEFAULT_SEDES;
+export const JORNADAS = DEFAULT_JORNADAS;
+export const PERIODOS: Periodo[] = [
+  { id: '2026-1', nombre: '2026 - 01', activo: true },
+];
+
 export const SEDES_JORNADAS: string[] = SEDES.flatMap(sede =>
   JORNADAS.map(jornada => `${sede.nombre} - ${jornada.nombre}`)
 );

@@ -1,0 +1,20 @@
+{
+  "sedes": [
+    {
+      "id": "sede-sj-principal",
+      "n": "SEDE PRINCIPAL SAN JOSÉ"
+    }
+  ],
+  "progs": [
+    {
+      "id": "prog-sj-bach",
+      "n": "Bachillerato Académico"
+    }
+  ],
+  "periods": [
+    {
+      "id": "period_2026_01",
+      "n": "2026 - 01"
+    }
+  ]
+}

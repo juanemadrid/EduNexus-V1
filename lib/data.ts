@@ -35,6 +35,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   let overduePayments = 0;
 
   try {
+    // Priority: Real-time count of active members to ensure data consistency
     const [students, teachers] = await Promise.all([
       db.list<any>('students').catch(() => []),
       db.list<any>('teachers').catch(() => [])
@@ -42,6 +43,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     
     totalStudents = students.filter((s: any) => s.isActive !== false).length;
     totalTeachers = teachers.filter((t: any) => t.isActive !== false).length;
+
+    // Async update stats document to keep it relatively fresh without blocking
+    db.create('institution_metadata', {
+      id: 'stats',
+      studentsCount: totalStudents,
+      teachersCount: totalTeachers,
+      paymentsTotal: 0,
+      overdueCount: 0,
+      lastSync: Date.now()
+    }).catch(console.error);
     
   } catch (error) {
     console.error("Error fetching stats:", error);

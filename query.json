@@ -1,0 +1,26 @@
+[
+  {
+    "id": "stud-sanjose-001",
+    "name": "Juan Eduardo Madrid",
+    "prog": "prog-sj-bach",
+    "sede": "sede-sj-principal"
+  },
+  {
+    "id": "stud-sj-decimo-01",
+    "name": "Andrés Felipe Castillo",
+    "prog": "prog-sj-bach",
+    "sede": "sede-sj-principal"
+  },
+  {
+    "id": "stud-sj-sexto-01",
+    "name": "Carlos Mendoza",
+    "prog": "prog-sj-bach",
+    "sede": "sede-sj-principal"
+  },
+  {
+    "id": "stud-sj-sexto-02",
+    "name": "Lucía Fernández",
+    "prog": "prog-sj-bach",
+    "sede": "sede-sj-principal"
+  }
+]

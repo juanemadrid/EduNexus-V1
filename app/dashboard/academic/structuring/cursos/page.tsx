@@ -2,12 +2,14 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import { Plus, X, Edit, Trash2, Eye, ChevronLeft, ChevronRight, Search, Download, ChevronDown } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
-const PERIODOS = ['2026 - 01', '2026 - 02'];
+import { db } from '@/lib/db';
+/* Removed hardcoded PERIODOS */
 export default function CursosPage() {
   const [cursos, setCursos] = useState<any[]>([]);
   const [sedes, setSedes] = useState<any[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [periods, setPeriods] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
@@ -33,6 +35,7 @@ export default function CursosPage() {
   const [selectedSedeJornada, setSelectedSedeJornada] = useState('');
   const [filteredPrograms, setFilteredPrograms] = useState<any[]>([]);
   const [filteredPensumSubjects, setFilteredPensumSubjects] = useState<any[]>([]);
+  const [allSubjects, setAllSubjects] = useState<any[]>([]);
 
   const [form, setForm] = useState({
     codigo: '',
@@ -49,17 +52,12 @@ export default function CursosPage() {
   });
 
   useEffect(() => {
-    const savedCursos = localStorage.getItem('edunexus_cursos');
-    if (savedCursos) setCursos(JSON.parse(savedCursos));
-
-    const savedSedes = localStorage.getItem('edunexus_sedes');
-    if (savedSedes) setSedes(JSON.parse(savedSedes));
-
-    const savedPrograms = localStorage.getItem('edunexus_academic_programs');
-    if (savedPrograms) setPrograms(JSON.parse(savedPrograms));
-
-    const savedTeachers = localStorage.getItem('edunexus_registered_teachers');
-    if (savedTeachers) setTeachers(JSON.parse(savedTeachers));
+    db.list('cursos').then(setCursos);
+    db.list('sedes').then(setSedes);
+    db.list('academic_programs').then(setPrograms);
+    db.list('teachers').then(setTeachers);
+    db.list('academic_periods').then(setPeriods);
+    db.list('academic_subjects').then(setAllSubjects);
   }, []);
 
   // Build sede-jornada dropdown options
@@ -89,14 +87,15 @@ export default function CursosPage() {
     } catch { setFilteredPrograms([]); }
   };
 
-  // When program changes, load its pensum subjects
+  // When program changes, load subjects (from pensum or all subjects fallback)
   const handleProgramChange = (programaId: string) => {
     setForm(f => ({ ...f, programaId, pensumLabel: '', asignaturaId: '' }));
     const prog = programs.find(p => p.id === programaId);
-    if (prog?.pensumSubjects) {
+    if (prog?.pensumSubjects && prog.pensumSubjects.length > 0) {
       setFilteredPensumSubjects(prog.pensumSubjects);
     } else {
-      setFilteredPensumSubjects([]);
+      // Fallback: show ALL subjects from Firestore
+      setFilteredPensumSubjects(allSubjects);
     }
   };
 
@@ -120,7 +119,7 @@ export default function CursosPage() {
     return s ? s.nombre : id;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.codigo || !form.nombre || !form.sedeJornada || !form.programaId || !form.asignaturaId || !form.cupoMaximo || !form.fechaInicio || !form.fechaFin) {
       alert('Por favor complete todos los campos obligatorios (*)');
       return;
@@ -141,15 +140,14 @@ export default function CursosPage() {
       cuposOcupados: isEditing ? (cursos.find(c => c.id === editingId)?.cuposOcupados || 0) : 0
     };
 
-    let updated;
     if (isEditing && editingId) {
-      updated = cursos.map(c => c.id === editingId ? curso : c);
+      await (db as any).update('cursos', editingId, curso);
     } else {
-      updated = [curso, ...cursos];
+      await (db as any).create('cursos', curso);
     }
 
-    setCursos(updated);
-    localStorage.setItem('edunexus_cursos', JSON.stringify(updated));
+    const fresh = await db.list('cursos');
+    setCursos(fresh);
     closeModal();
   };
 
@@ -179,7 +177,11 @@ export default function CursosPage() {
     // Re-load cascading data
     handleSedeJornadaChange(curso.sedeJornada || '');
     const prog = programs.find(p => p.id === curso.programaId);
-    if (prog?.pensumSubjects) setFilteredPensumSubjects(prog.pensumSubjects);
+    if (prog?.pensumSubjects && prog.pensumSubjects.length > 0) {
+      setFilteredPensumSubjects(prog.pensumSubjects);
+    } else {
+      setFilteredPensumSubjects(allSubjects);
+    }
     setEditingId(curso.id);
     setIsEditing(true);
     setShowModal(true);
@@ -190,11 +192,11 @@ export default function CursosPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deletingId) {
-      const updated = cursos.filter(c => c.id !== deletingId);
-      setCursos(updated);
-      localStorage.setItem('edunexus_cursos', JSON.stringify(updated));
+      await db.delete('cursos', deletingId);
+      const fresh = await db.list('cursos');
+      setCursos(fresh);
     }
     setShowDeleteModal(false);
     setDeletingId(null);
@@ -259,7 +261,7 @@ export default function CursosPage() {
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: '#64748b', marginBottom: '6px' }}>Período</label>
                 <select className="input-premium" style={{ width: '100%', height: '40px', fontSize: '13px' }} value={filters.periodo} onChange={e => setFilters(f => ({ ...f, periodo: e.target.value }))}>
                   <option value="">Todos</option>
-                  {PERIODOS.map(p => <option key={p} value={p}>{p}</option>)}
+                  {periods.map((p: any) => <option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
@@ -450,7 +452,7 @@ export default function CursosPage() {
               {/* Asignatura */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Asignatura *</label>
-                <select className="input-premium" value={form.asignaturaId} onChange={e => setForm(f => ({ ...f, asignaturaId: e.target.value }))} disabled={filteredPensumSubjects.length === 0}>
+                <select className="input-premium" value={form.asignaturaId} onChange={e => setForm(f => ({ ...f, asignaturaId: e.target.value }))} disabled={false}>
                   <option value="">Seleccione</option>
                   {filteredPensumSubjects.map((s: any) => (
                     <option key={s.id || s.subjectId || Math.random()} value={s.id || s.subjectId}>{s.nombre}</option>
@@ -468,7 +470,8 @@ export default function CursosPage() {
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', color: '#64748b', marginBottom: '6px', textTransform: 'uppercase' }}>Período *</label>
                 <select className="input-premium" value={form.periodo} onChange={e => setForm(f => ({ ...f, periodo: e.target.value }))}>
-                  {PERIODOS.map(p => <option key={p} value={p}>{p}</option>)}
+                  <option value="">Seleccione Período</option>
+                  {periods.map((p: any) => <option key={p.id} value={p.name}>{p.name}</option>)}
                 </select>
               </div>
 

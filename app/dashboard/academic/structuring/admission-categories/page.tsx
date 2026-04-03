@@ -1,16 +1,29 @@
 'use client';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { Search, Download, ChevronDown, Plus, X, Save } from 'lucide-react';
-import React, { useState } from 'react';
+import { db } from '@/lib/db';
 
 export default function AdmissionCategoriesPage() {
-  const [categories, setCategories] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      const s = localStorage.getItem('edunexus_registered_admission_categories');
-      return s ? JSON.parse(s) : [];
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  const loadCategories = async () => {
+    setIsInitialLoading(true);
+    try {
+      const data = await db.list<any>('admission_categories');
+      setCategories(data);
+    } catch (error) {
+       console.error("Error loading admission categories:", error);
+    } finally {
+      setIsInitialLoading(false);
     }
-    return [];
-  });
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
   
   const [showModal, setShowModal] = useState(false);
   const [registerSuccess, setRegisterSuccess] = useState(false);
@@ -18,26 +31,36 @@ export default function AdmissionCategoriesPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [newCatName, setNewCatName] = useState('');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!newCatName.trim()) {
       alert('Debe ingresar un nombre para la categoría.');
       return;
     }
-    const newCat = {
-      id: Date.now().toString(),
-      name: newCatName.toUpperCase(),
-      createdAt: new Date().toISOString(),
-      isActive: true,
-    };
-    const updated = [...categories, newCat];
-    setCategories(updated);
-    localStorage.setItem('edunexus_registered_admission_categories', JSON.stringify(updated));
-    setRegisterSuccess(true);
-    setTimeout(() => {
-      setShowModal(false);
-      setRegisterSuccess(false);
-      setNewCatName('');
-    }, 1500);
+
+    setIsLoading(true);
+    try {
+      const newCat = {
+        id: crypto.randomUUID(),
+        name: newCatName.toUpperCase(),
+        createdAt: new Date().toISOString(),
+        isActive: true,
+      };
+
+      await db.create('admission_categories', newCat);
+      const updated = [...categories, newCat];
+      setCategories(updated);
+      setRegisterSuccess(true);
+      setTimeout(() => {
+        setShowModal(false);
+        setRegisterSuccess(false);
+        setNewCatName('');
+      }, 1500);
+    } catch (error) {
+       console.error("Error saving admission category:", error);
+       alert("Error al guardar la categoría.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const filtered = categories.filter((m: any) =>
