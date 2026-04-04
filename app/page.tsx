@@ -40,10 +40,20 @@ export default function LoginPage() {
         return;
       }
 
-      if (email.toLowerCase().includes('familia') || email.toLowerCase().includes('padre')) {
-        localStorage.setItem('edunexus_user', JSON.stringify({ email, role: 'FAMILY', name: 'Familia López' }));
-        router.push('/dashboard/family-portal');
-        return;
+      if (email.toLowerCase().includes('familia') || email.toLowerCase().includes('padre') || email.toLowerCase() === 'ricardo@email.com') {
+        const isRicardo = email.toLowerCase() === 'ricardo@email.com';
+        const demoName = isRicardo ? 'Familia Suarez' : 'Familia López';
+        const demoId = isRicardo ? '10203040' : 'admin123';
+        
+        if (password === demoId || password === 'admin123') {
+           localStorage.setItem('edunexus_user', JSON.stringify({ email, role: 'FAMILY', name: demoName }));
+           router.push('/dashboard/family-portal');
+           return;
+        } else {
+           setError("Credenciales de familia incorrectas. Use su ID de acudiente.");
+           setIsLoading(false);
+           return;
+        }
       }
 
       // 3. Institutional Lookup in Master DB
@@ -113,7 +123,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', background: '#070b14', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-outfit)' }}>
+    <div className="login-master-container">
       {/* Dynamic Background */}
       <div style={{ position: 'absolute', width: '900px', height: '900px', background: 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(7,11,20,0) 70%)', top: '-450px', left: '-300px', filter: 'blur(80px)' }}></div>
       <div style={{ position: 'absolute', width: '700px', height: '700px', background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, rgba(7,11,20,0) 70%)', bottom: '-250px', right: '-150px', filter: 'blur(80px)' }}></div>
@@ -121,28 +131,28 @@ export default function LoginPage() {
       <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'80\' height=\'80\' viewBox=\'0 0 80 80\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M50 50v-8h-2v8h-8v2h8v8h2v-8h8v-2h-8zM50 4v-4h-2v4h-8v2h8v8h2V6h8V4h-8zM10 50v-8H8v8H0v2h8v8h2v-8h8v-2h-8zM10 4V0H8v4H0v2h8v8h2V6h8V4h-8z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }}></div>
 
       {/* Main Container */}
-      <div style={{ flex: 1, display: 'flex', position: 'relative', zIndex: 10 }}>
+      <div className="main-login-wrapper">
         
-        {/* Left Side: Brand Experience */}
-        <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 100px' }}>
+        {/* Brand Experience Section */}
+        <div className="brand-experience-section">
           <motion.div initial={{ opacity: 0, x: -60 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '48px' }}>
+            <div className="brand-logo-container">
               <div style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 15px 35px -5px rgba(16,185,129,0.4)', rotate: '-5deg' }}>
                 <ShieldCheck size={28} color="white" />
               </div>
               <h1 style={{ margin: 0, fontSize: '38px', fontWeight: '900', color: 'white', letterSpacing: '-1.5px' }}>EduNexus</h1>
             </div>
 
-            <h2 style={{ fontSize: '72px', fontWeight: '900', color: 'white', lineHeight: '0.95', marginBottom: '32px', letterSpacing: '-3px' }}>
+            <h2 className="hero-typography">
               La Nueva <br/>
-              <span style={{ background: 'linear-gradient(90deg, #3b82f6, #10b981)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Era Educativa</span>
+              <span className="era-gradient">Era Educativa</span>
             </h2>
             
-            <p style={{ fontSize: '20px', color: '#94a3b8', maxWidth: '520px', lineHeight: '1.6', fontWeight: '500', marginBottom: '64px' }}>
+            <p className="hero-subtext">
               Gestione su institución con inteligencia artificial, finanzas predictivas y una experiencia de usuario sin precedentes.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', maxWidth: '400px' }}>
+            <div className="stats-badges-container">
                <div style={{ padding: '24px', background: 'rgba(255,255,255,0.03)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)' }}>
                   <h4 style={{ color: 'white', fontSize: '28px', fontWeight: '900', margin: '0 0 4px', letterSpacing: '-1px' }}>2.0</h4>
                   <p style={{ color: '#64748b', margin: 0, fontSize: '13px', fontWeight: '800', textTransform: 'uppercase' }}>Versión Elite</p>
@@ -155,11 +165,11 @@ export default function LoginPage() {
           </motion.div>
         </div>
 
-        {/* Right Side: Elite Login Form */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingRight: '100px' }}>
+        {/* Elite Login Form Section */}
+        <div className="login-form-section">
            <motion.div 
               initial={{ opacity: 0, scale: 0.9, rotateY: 15 }} animate={{ opacity: 1, scale: 1, rotateY: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}
-              style={{ width: '460px', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(32px)', borderRadius: '40px', border: '1px solid rgba(255,255,255,0.1)', padding: '56px', boxShadow: '0 40px 100px -15px rgba(0,0,0,0.6)', perspective: '1000px' }}
+              className="elite-login-card"
            >
               <div style={{ textAlign: 'center', marginBottom: '40px' }}>
                 <h3 style={{ fontSize: '28px', fontWeight: '900', color: 'white', margin: '0 0 10px', letterSpacing: '-0.5px' }}>Portal de Acceso</h3>
@@ -233,7 +243,149 @@ export default function LoginPage() {
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
         :root { --font-outfit: 'Outfit', sans-serif; }
         body { margin: 0; background: #070b14; }
-        .premium-login-input:focus { border-color: rgba(59, 130, 246, 0.6) !important; background: rgba(59, 130, 246, 0.08) !important; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        
+        .login-master-container {
+           minHeight: 100vh;
+           display: flex;
+           background: #070b14;
+           position: relative;
+           overflow-x: hidden;
+           fontFamily: var(--font-outfit);
+        }
+
+        .main-login-wrapper {
+           flex: 1;
+           display: flex;
+           position: relative;
+           z-index: 10;
+        }
+
+        .brand-experience-section {
+           flex: 1.2;
+           display: flex;
+           flex-direction: column;
+           justify-content: center;
+           padding: 0 100px;
+        }
+
+        .login-form-section {
+           flex: 1;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           padding-right: 100px;
+        }
+
+        .brand-logo-container {
+           display: flex;
+           align-items: center;
+           gap: 16px;
+           margin-bottom: 48px;
+        }
+
+        .hero-typography {
+           font-size: 72px;
+           font-weight: 900;
+           color: white;
+           line-height: 0.95;
+           margin-bottom: 32px;
+           letter-spacing: -3px;
+        }
+
+        .era-gradient {
+           background: linear-gradient(90deg, #3b82f6, #10b981);
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtext {
+           font-size: 20px;
+           color: #94a3b8;
+           max-width: 520px;
+           line-height: 1.6;
+           font-weight: 500;
+           margin-bottom: 64px;
+        }
+
+        .stats-badges-container {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 32px;
+           max-width: 400px;
+        }
+
+        .elite-login-card {
+           width: 460px;
+           background: rgba(15, 23, 42, 0.4);
+           backdrop-filter: blur(32px);
+           border-radius: 40px;
+           border: 1px solid rgba(255,255,255,0.1);
+           padding: 56px;
+           box-shadow: 0 40px 100px -15px rgba(0,0,0,0.6);
+           perspective: 1000px;
+        }
+
+        /* MOBILE OPTIMIZATION */
+        @media (max-width: 1024px) {
+           .main-login-wrapper {
+              flex-direction: column;
+           }
+           
+           .brand-experience-section {
+              padding: 60px 40px;
+              text-align: center;
+              align-items: center;
+           }
+
+           .brand-logo-container {
+              justify-content: center;
+           }
+
+           .hero-typography {
+              font-size: 48px;
+              letter-spacing: -2px;
+           }
+
+           .hero-subtext {
+              margin: 0 auto 40px;
+              font-size: 16px;
+           }
+
+           .stats-badges-container {
+              margin: 0 auto;
+           }
+
+           .login-form-section {
+              padding: 40px 24px 100px;
+           }
+
+           .elite-login-card {
+              width: 100%;
+              max-width: 440px;
+              padding: 40px 30px;
+           }
+        }
+
+        @media (max-width: 480px) {
+           .hero-typography {
+              font-size: 42px;
+              line-height: 1.1;
+           }
+           .hero-subtext {
+              font-size: 15px;
+           }
+           .elite-login-card {
+              border-radius: 32px;
+              padding: 32px 24px;
+           }
+        }
+
+        .premium-login-input:focus { 
+           border-color: rgba(59, 130, 246, 0.6) !important; 
+           background: rgba(59, 130, 246, 0.08) !important; 
+           box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); 
+        }
+        
         .spin { animation: spin 0.8s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>

@@ -9,8 +9,20 @@ export default function FamilyPortalPage() {
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success'>('idle');
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [userName, setUserName] = useState('Familia López');
 
   useEffect(() => {
+    // 1. Auth & Dynamic Name Extraction
+    const storedUser = localStorage.getItem('edunexus_user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      setUserName(user.name);
+    } else {
+      // Redirect to login if not authenticated (Elite Security)
+      // window.location.href = '/'; 
+    }
+
+    // 2. PWA Install Logic
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -129,7 +141,7 @@ export default function FamilyPortalPage() {
                {/* Welcome Section */}
                <div style={{ marginBottom: '36px' }}>
                   <p style={{ margin: '0 0 6px', fontSize: '13px', fontWeight: '800', color: '#10b981', textTransform: 'uppercase', letterSpacing: '1px' }}>Buen día</p>
-                  <h2 style={{ fontSize: '32px', fontWeight: '900', margin: 0, letterSpacing: '-1.5px', lineHeight: '1' }}>Familia López</h2>
+                  <h2 style={{ fontSize: '32px', fontWeight: '900', margin: 0, letterSpacing: '-1.5px', lineHeight: '1' }}>{userName}</h2>
                </div>
 
                {/* Stats Grid (Glassmorphism Pro) */}
