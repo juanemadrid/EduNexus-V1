@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, ArrowRight, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, ShieldCheck, Loader2, AlertCircle, AppWindow, Smartphone, DownloadCloud } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/db';
 import { defaultFirebaseConfig } from '@/lib/db/defaultConfig';
@@ -13,6 +13,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    });
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallBanner(false);
+    } else {
+        const timer = setTimeout(() => {
+            if (!deferredPrompt) setShowInstallBanner(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }
+  }, [deferredPrompt]);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowInstallBanner(false);
+      }
+    } else {
+      alert("En iPhone (Safari): Toca 'Compartir' y luego 'Añadir a pantalla de inicio'.");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,8 +142,6 @@ export default function LoginPage() {
       if (role === 'RECEPTIONIST') {
         router.push('/dashboard/institutional/reception');
       } else if (isMobile) {
-        // Even admins get an elite mobile view or the dashboard (depending on design choice)
-        // For now, only parents and teachers are forced to portals
         router.push('/dashboard');
       } else {
         router.push('/dashboard');
@@ -137,7 +168,7 @@ export default function LoginPage() {
         <div className="brand-experience-section">
           <motion.div initial={{ opacity: 0, x: -60 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
             <div className="brand-logo-container">
-              <div style={{ width: '56px', height: '56px', background: 'linear-gradient(135deg, #10b981, #3b82f6)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 15px 35px -5px rgba(16,185,129,0.4)', rotate: '-5deg' }}>
+              <div className="elite-logo-hex">
                 <ShieldCheck size={28} color="white" />
               </div>
               <h1 style={{ margin: 0, fontSize: '38px', fontWeight: '900', color: 'white', letterSpacing: '-1.5px' }}>EduNexus</h1>
@@ -167,6 +198,26 @@ export default function LoginPage() {
 
         {/* Elite Login Form Section */}
         <div className="login-form-section">
+           
+           {/* PWA Direct Installation Banner for Mobile */}
+           <AnimatePresence>
+              {showInstallBanner && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
+                    className="mobile-install-banner"
+                  >
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div className="install-icon-box"><Smartphone size={20}/></div>
+                        <div>
+                           <p style={{ margin: 0, fontSize: '13px', fontWeight: '900', color: 'white' }}>Instalar App Elite</p>
+                           <p style={{ margin: 0, fontSize: '10px', color: '#94a3b8', fontWeight: '700' }}>Acceso rápido institucional</p>
+                        </div>
+                     </div>
+                     <button onClick={handleInstallClick} className="btn-install-pwa">DESCARGAR</button>
+                  </motion.div>
+              )}
+           </AnimatePresence>
+
            <motion.div 
               initial={{ opacity: 0, scale: 0.9, rotateY: 15 }} animate={{ opacity: 1, scale: 1, rotateY: 0 }} transition={{ duration: 0.8, ease: "easeOut" }}
               className="elite-login-card"
@@ -245,12 +296,12 @@ export default function LoginPage() {
         body { margin: 0; background: #070b14; }
         
         .login-master-container {
-           minHeight: 100vh;
+           min-height: 100vh;
            display: flex;
            background: #070b14;
            position: relative;
            overflow-x: hidden;
-           fontFamily: var(--font-outfit);
+           font-family: var(--font-outfit);
         }
 
         .main-login-wrapper {
@@ -271,6 +322,7 @@ export default function LoginPage() {
         .login-form-section {
            flex: 1;
            display: flex;
+           flex-direction: column;
            align-items: center;
            justify-content: center;
            padding-right: 100px;
@@ -325,6 +377,51 @@ export default function LoginPage() {
            perspective: 1000px;
         }
 
+        .elite-logo-hex {
+           width: 56px; 
+           height: 56px; 
+           background: linear-gradient(135deg, #10b981, #3b82f6); 
+           border-radius: 18px; 
+           display: flex; 
+           align-items: center; 
+           justify-content: center; 
+           box-shadow: 0 15px 35px -5px rgba(16,185,129,0.4); 
+           rotate: -5deg;
+        }
+
+        .mobile-install-banner {
+           width: 100%;
+           max-width: 440px;
+           background: rgba(15, 23, 42, 0.6);
+           backdrop-filter: blur(20px);
+           border: 1px solid rgba(16,185,129,0.3);
+           border-radius: 24px;
+           padding: 16px 20px;
+           margin-bottom: 24px;
+           display: flex;
+           align-items: center;
+           justify-content: space-between;
+           box-shadow: 0 20px 40px -10px rgba(0,0,0,0.4);
+        }
+
+        .install-icon-box {
+           background: linear-gradient(135deg, #059669, #10b981);
+           padding: 8px;
+           border-radius: 12px;
+           color: white;
+        }
+
+        .btn-install-pwa {
+           background: white;
+           color: #020617;
+           border: none;
+           padding: 8px 16px;
+           border-radius: 100px;
+           font-size: 11px;
+           font-weight: 900;
+           cursor: pointer;
+        }
+
         /* MOBILE OPTIMIZATION */
         @media (max-width: 1024px) {
            .main-login-wrapper {
@@ -332,51 +429,45 @@ export default function LoginPage() {
            }
            
            .brand-experience-section {
-              padding: 60px 40px;
+              padding: 40px 24px 20px;
               text-align: center;
               align-items: center;
            }
 
            .brand-logo-container {
               justify-content: center;
+              margin-bottom: 20px;
            }
 
-           .hero-typography {
-              font-size: 48px;
-              letter-spacing: -2px;
-           }
-
-           .hero-subtext {
-              margin: 0 auto 40px;
-              font-size: 16px;
-           }
-
-           .stats-badges-container {
-              margin: 0 auto;
+           /* HIDE HERO TEXT ON MOBILE AS PER USER REQUEST */
+           .hero-typography, .hero-subtext, .stats-badges-container {
+              display: none;
            }
 
            .login-form-section {
-              padding: 40px 24px 100px;
+              padding: 0 24px 100px;
+              justify-content: flex-start;
+           }
+
+           .mobile-install-banner {
+              margin-top: 10px;
            }
 
            .elite-login-card {
               width: 100%;
               max-width: 440px;
               padding: 40px 30px;
+              border-radius: 36px;
            }
         }
 
         @media (max-width: 480px) {
-           .hero-typography {
-              font-size: 42px;
-              line-height: 1.1;
-           }
-           .hero-subtext {
-              font-size: 15px;
-           }
            .elite-login-card {
               border-radius: 32px;
               padding: 32px 24px;
+           }
+           .mobile-install-banner {
+              padding: 12px 16px;
            }
         }
 
